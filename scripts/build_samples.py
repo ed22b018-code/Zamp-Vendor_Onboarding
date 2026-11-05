@@ -204,8 +204,9 @@ def stamp(img, scanned):
     d = ImageDraw.Draw(img, 'RGBA'); W, H = img.size
     txt = 'SPECIMEN · TEST DATA'
     layer = Image.new('RGBA', img.size, (0, 0, 0, 0)); ld = ImageDraw.Draw(layer)
-    ld.text((W * 0.12, H * 0.42), txt, font=font(FB, int(H * 0.11)), fill=(200, 30, 30, 50))
-    layer = layer.rotate(14, center=(W / 2, H / 2)); img.alpha_composite(layer)
+    # Watermark sits in the lower band, clear of the key numbers (PAN, account number), so it can't cause misreads.
+    ld.text((W * 0.16, H * 0.72), txt, font=font(FB, int(H * 0.075)), fill=(200, 30, 30, 45))
+    img.alpha_composite(layer)
     d = ImageDraw.Draw(img); d.text((14, H - 22), 'Fictional specimen for testing VETTED. Not a real document.', font=font(F, 12), fill=(130, 130, 130, 255))
     if scanned:
         rgb = img.convert('L').convert('RGB').rotate(-1.4, expand=False, fillcolor=(235, 235, 230)).filter(ImageFilter.GaussianBlur(0.7))

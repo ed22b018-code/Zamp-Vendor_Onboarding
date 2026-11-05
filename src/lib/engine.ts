@@ -255,9 +255,10 @@ async function crossCheck(ctx: Ctx, s: Stage) {
   if (!stOk) F(ctx, { code: 'XCK-STATE', severity: 'vendor', stage: 'cross', title: 'GSTIN state differs from the address', detail: `The GSTIN is registered in ${gState} but the address given is in ${sub.address.state}. Each state needs its own GSTIN.`, ask: ask.field('gstin', `Give the GSTIN registered in ${sub.address.state}, or correct the address`) })
   // Documents vs form
   if (gst) {
-    const gstNo = (gst.gstin || '').toUpperCase()
-    s.checks.push({ label: 'GSTIN on certificate', status: gstNo === g ? 'pass' : 'fail', detail: gstNo === g ? 'Matches the form' : `Certificate shows ${gstNo || 'no GSTIN'}, form says ${g}` })
-    if (gstNo && gstNo !== g) F(ctx, { code: 'XCK-GSTCERT', severity: 'vendor', stage: 'cross', title: 'GST certificate is for a different GSTIN', detail: `The certificate shows ${gstNo}; the form says ${g}.`, ask: ask.doc('gst_certificate', `Upload the GST certificate for ${g}`) })
+    const gstNo = (gst.gstin || '').toUpperCase().replace(/\s/g, '')
+    if (gstNo && !GSTIN_RE.test(gstNo)) { s.checks.push({ label: 'GSTIN on certificate', status: 'warn', detail: `AI read "${gstNo}", which is not a valid GSTIN, so it was not used` }); F(ctx, { code: 'DOC-MISREAD', severity: 'review', stage: 'cross', title: 'GSTIN on the certificate could not be read reliably', detail: `The AI reading "${gstNo}" is not a valid GSTIN. A person should compare the certificate with ${g}.` }) }
+    else s.checks.push({ label: 'GSTIN on certificate', status: gstNo === g ? 'pass' : 'fail', detail: gstNo === g ? 'Matches the form' : `Certificate shows ${gstNo || 'no GSTIN'}, form says ${g}` })
+    if (gstNo && GSTIN_RE.test(gstNo) && gstNo !== g) F(ctx, { code: 'XCK-GSTCERT', severity: 'vendor', stage: 'cross', title: 'GST certificate is for a different GSTIN', detail: `The certificate shows ${gstNo}; the form says ${g}.`, ask: ask.doc('gst_certificate', `Upload the GST certificate for ${g}`) })
     const names = [gst.legal_name, gst.trade_name].filter(Boolean) as string[]
     const m = await Promise.all(names.map(n => sameName(ctx, sub.legal_name, n, 'vendor form legal name vs GST certificate')))
     const hit = m.findIndex(x => x.same)
@@ -275,9 +276,15 @@ async function crossCheck(ctx: Ctx, s: Stage) {
     if (!(panFits && consFits)) F(ctx, { code: 'XCK-BIZTYPE', severity: 'vendor', stage: 'cross', title: `Declared as ${sub.business_type}, but PAN and GST say ${cons || panType?.label}`, detail: `The PAN's 4th character (${p[3]}) means ${panType?.label || 'another holder type'} and the GST certificate says ${gst.constitution}. The contract, TDS rate and documents needed all depend on the real business type.`, ask: ask.field('business_type', `Confirm your business type (your PAN and GST registration say ${cons || panType?.label})`) })
   }
   if (pan) {
-    const pNo = (pan.pan || '').toUpperCase()
+    const pNo = (pan.pan || '').toUpperCase().replace(/\s/g, '')
+    if (pNo && !PAN_RE.test(pNo)) {
+      // A reading that isn't even a valid PAN is a misread, not evidence of a different PAN.
+      s.checks.push({ label: 'PAN on PAN card', status: 'warn', detail: `AI read "${pNo}", which is not a valid PAN, so it was not used` })
+      F(ctx, { code: 'DOC-MISREAD', severity: 'review', stage: 'cross', title: 'PAN on the card could not be read reliably', detail: `The AI reading "${pNo}" is not a valid PAN. A person should compare the card with ${p}.` })
+    } else {
     s.checks.push({ label: 'PAN on PAN card', status: pNo === p ? 'pass' : 'fail', detail: pNo === p ? 'Matches the form' : `Card shows ${pNo || 'no PAN'}, form says ${p}` })
     if (pNo && pNo !== p) F(ctx, { code: 'XCK-PANCARD', severity: 'vendor', stage: 'cross', title: 'PAN card is for a different PAN', detail: `The card shows ${pNo}; the form says ${p}.`, ask: ask.doc('pan_card', `Upload the PAN card for ${p}`) })
+    }
   }
   if (chq) {
     const acc = (chq.account_number || '').replace(/\D/g, ''), fAcc = sub.bank.account_number.replace(/\D/g, '')

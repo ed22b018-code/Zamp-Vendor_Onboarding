@@ -123,6 +123,7 @@ const READ_PROMPT = `You are a meticulous vendor-onboarding analyst for an India
 For EACH document:
 - detected: what the document ACTUALLY is (ignore what the vendor called it): gst_certificate (GST registration certificate, REG-06), pan_card, cancelled_cheque, bank_letter (a bank's letter confirming account details), msme_certificate (Udyam), or other.
 - Copy values EXACTLY as printed. Never guess or fill in a value that isn't on the document; use null.
+  Formats, to read carefully (ignore any watermark across the text): a PAN is exactly 10 characters (5 letters, 4 digits, 1 letter, e.g. ABCDE1234F); a GSTIN is exactly 15 characters (2 digits, the 10-character PAN, 1 character, Z, 1 character); an IFSC is exactly 11 characters with 0 as the 5th. If what you see doesn't fit the format, re-read it and lower your confidence.
   gst_certificate: legal_name, trade_name, gstin, constitution (as printed, e.g. "Private Limited Company", "Partnership", "Proprietorship"), address, state, registration_date (YYYY-MM-DD, date of liability), status if printed.
   pan_card: name, pan.
   cancelled_cheque / bank_letter: account_name (the account holder printed, e.g. after "For"), account_number (digits only), ifsc, bank_name.
