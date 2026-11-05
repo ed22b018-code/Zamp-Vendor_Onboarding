@@ -1,0 +1,30 @@
+{
+  "name": "vetted-onboarding",
+  "version": "1.0.0",
+  "description": "VETTED: vendor onboarding from submission to a reasoned decision",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "samples": "python3 scripts/build_samples.py"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
+    "next": "^15.5.28",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "server-only": "^0.0.1",
+    "unpdf": "^1.9.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "typescript": "^5.9.3"
+  },
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ed22b018-code/Zamp-Vendor_Onboarding.git"
+  }
+}

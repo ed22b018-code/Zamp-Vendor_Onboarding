@@ -1,0 +1,1314 @@
+{
+ "samples": [
+  {
+   "id": "v01",
+   "type": "Smooth path",
+   "scenario": "Clean private limited company, every document consistent, MSME certificate attached",
+   "expect": "approved",
+   "title": "Brightline Facility Services Pvt Ltd",
+   "email": {
+    "from": "Anitha Raman <accounts@brightlinefs.in>",
+    "subject": "Vendor registration: Brightline Facility Services",
+    "body": "Hello, please find our vendor registration for housekeeping services at your Chennai HQ, with GST, PAN, cancelled cheque and Udyam certificate attached.",
+    "received": "2026-11-02T10:07:00+05:30"
+   },
+   "submission": {
+    "legal_name": "Brightline Facility Services Pvt Ltd",
+    "trade_name": null,
+    "business_type": "Private Limited",
+    "gstin": "33AAECB4417K1ZU",
+    "pan": "AAECB4417K",
+    "address": {
+     "line": "14, Cathedral Road, Gopalapuram",
+     "city": "Chennai",
+     "state": "Tamil Nadu",
+     "pin": "600086"
+    },
+    "contact": {
+     "name": "Anitha Raman",
+     "email": "accounts@brightlinefs.in",
+     "phone": "+91 44 2811 4417"
+    },
+    "bank": {
+     "account_name": "Brightline Facility Services Pvt Ltd",
+     "account_number": "50200012344417",
+     "ifsc": "HDFC0000082",
+     "bank_name": "HDFC Bank"
+    },
+    "category": "Services",
+    "msme": true,
+    "udyam": "UDYAM-TN-02-0044170",
+    "sponsor": {
+     "name": "Divya N.",
+     "department": "Admin"
+    }
+   },
+   "docs": [
+    {
+     "id": "d1",
+     "declared": "gst_certificate",
+     "file": "gst_certificate.pdf",
+     "mime": "application/pdf"
+    },
+    {
+     "id": "d2",
+     "declared": "pan_card",
+     "file": "pan_card.png",
+     "mime": "image/png"
+    },
+    {
+     "id": "d3",
+     "declared": "cancelled_cheque",
+     "file": "cancelled_cheque.png",
+     "mime": "image/png"
+    },
+    {
+     "id": "d4",
+     "declared": "msme_certificate",
+     "file": "udyam_certificate.pdf",
+     "mime": "application/pdf"
+    }
+   ],
+   "truth": [
+    {
+     "doc_id": "d1",
+     "detected": "gst_certificate",
+     "fields": {
+      "legal_name": "BRIGHTLINE FACILITY SERVICES PVT LTD",
+      "trade_name": "BRIGHTLINE FACILITY SERVICES PVT LTD",
+      "gstin": "33AAECB4417K1ZU",
+      "constitution": "Private Limited Company",
+      "address": "14, Cathedral Road, Gopalapuram, Chennai, Tamil Nadu 600086",
+      "state": "Tamil Nadu",
+      "registration_date": "2019-04-12",
+      "status": "Active"
+     }
+    },
+    {
+     "doc_id": "d2",
+     "detected": "pan_card",
+     "fields": {
+      "name": "BRIGHTLINE FACILITY SERVICES PVT LTD",
+      "pan": "AAECB4417K"
+     }
+    },
+    {
+     "doc_id": "d3",
+     "detected": "cancelled_cheque",
+     "fields": {
+      "account_name": "BRIGHTLINE FACILITY SERVICES PVT LTD",
+      "account_number": "50200012344417",
+      "ifsc": "HDFC0000082",
+      "bank_name": "HDFC Bank"
+     }
+    },
+    {
+     "doc_id": "d4",
+     "detected": "msme_certificate",
+     "fields": {
+      "name": "BRIGHTLINE FACILITY SERVICES PVT LTD",
+      "udyam": "UDYAM-TN-02-0044170"
+     }
+    }
+   ]
+  },
+  {
+   "id": "v02",
+   "type": "Edge case",
+   "scenario": "Bank account is not in the company's name: the cheque and the bank both say SUNDARAM TRADERS",
+   "expect": "pending",
+   "title": "Sundaram Packaging Solutions Pvt Ltd",
+   "email": {
+    "from": "V. Sundaram <finance@sundarampack.in>",
+    "subject": "New vendor form, Sundaram Packaging Solutions",
+    "body": "Dear team, sharing our onboarding details and documents for corrugated boxes supply. Kindly register us.",
+    "received": "2026-11-03T11:14:00+05:30"
+   },
+   "submission": {
+    "legal_name": "Sundaram Packaging Solutions Pvt Ltd",
+    "trade_name": null,
+    "business_type": "Private Limited",
+    "gstin": "33AAKCS2290M1Z0",
+    "pan": "AAKCS2290M",
+    "address": {
+     "line": "Plot 22, SIDCO Industrial Estate, Ambattur",
+     "city": "Chennai",
+     "state": "Tamil Nadu",
+     "pin": "600098"
+    },
+    "contact": {
+     "name": "V. Sundaram",
+     "email": "finance@sundarampack.in",
+     "phone": "+91 44 2625 2290"
+    },
+    "bank": {
+     "account_name": "Sundaram Packaging Solutions Pvt Ltd",
+     "account_number": "661205004455",
+     "ifsc": "ICIC0000001",
+     "bank_name": "ICICI Bank"
+    },
+    "category": "Goods",
+    "msme": false,
+    "udyam": null,
+    "sponsor": {
+     "name": "Ravi K.",
+     "department": "Warehouse"
+    }
+   },
+   "docs": [
+    {
+     "id": "d1",
+     "declared": "gst_certificate",
+     "file": "gst_certificate.pdf",
+     "mime": "application/pdf"
+    },
+    {
+     "id": "d2",
+     "declared": "pan_card",
+     "file": "pan_card.png",
+     "mime": "image/png"
+    },
+    {
+     "id": "d3",
+     "declared": "cancelled_cheque",
+     "file": "cancelled_cheque.png",
+     "mime": "image/png"
+    }
+   ],
+   "truth": [
+    {
+     "doc_id": "d1",
+     "detected": "gst_certificate",
+     "fields": {
+      "legal_name": "SUNDARAM PACKAGING SOLUTIONS PVT LTD",
+      "trade_name": "SUNDARAM PACKAGING SOLUTIONS PVT LTD",
+      "gstin": "33AAKCS2290M1Z0",
+      "constitution": "Private Limited Company",
+      "address": "Plot 22, SIDCO Industrial Estate, Ambattur, Chennai, Tamil Nadu 600098",
+      "state": "Tamil Nadu",
+      "registration_date": "2017-08-01",
+      "status": "Active"
+     }
+    },
+    {
+     "doc_id": "d2",
+     "detected": "pan_card",
+     "fields": {
+      "name": "SUNDARAM PACKAGING SOLUTIONS PVT LTD",
+      "pan": "AAKCS2290M"
+     }
+    },
+    {
+     "doc_id": "d3",
+     "detected": "cancelled_cheque",
+     "fields": {
+      "account_name": "SUNDARAM TRADERS",
+      "account_number": "661205004455",
+      "ifsc": "ICIC0000001",
+      "bank_name": "ICICI Bank"
+     }
+    }
+   ]
+  },
+  {
+   "id": "v03",
+   "type": "Edge case",
+   "scenario": "GSTIN belongs to a different business: its PAN and legal name don't match the vendor",
+   "expect": "rejected",
+   "title": "Apex Office Systems Pvt Ltd",
+   "email": {
+    "from": "Karthik Iyer <karthik@apexofficesys.in>",
+    "subject": "Registration request: Apex Office Systems",
+    "body": "Please find our company details for supplying printers and consumables.",
+    "received": "2026-11-04T12:21:00+05:30"
+   },
+   "submission": {
+    "legal_name": "Apex Office Systems Pvt Ltd",
+    "trade_name": null,
+    "business_type": "Private Limited",
+    "gstin": "33AAGCR5523H1ZI",
+    "pan": "AAFCA7781Q",
+    "address": {
+     "line": "88, Anna Salai, Teynampet",
+     "city": "Chennai",
+     "state": "Tamil Nadu",
+     "pin": "600018"
+    },
+    "contact": {
+     "name": "Karthik Iyer",
+     "email": "karthik@apexofficesys.in",
+     "phone": "+91 44 2433 7781"
+    },
+    "bank": {
+     "account_name": "Apex Office Systems Pvt Ltd",
+     "account_number": "917020077810",
+     "ifsc": "UTIB0000006",
+     "bank_name": "Axis Bank"
+    },
+    "category": "Goods",
+    "msme": false,
+    "udyam": null,
+    "sponsor": {
+     "name": "Divya N.",
+     "department": "Admin"
+    }
+   },
+   "docs": [
+    {
+     "id": "d1",
+     "declared": "gst_certificate",
+     "file": "gst_certificate.pdf",
+     "mime": "application/pdf"
+    },
+    {
+     "id": "d2",
+     "declared": "pan_card",
+     "file": "pan_card.png",
+     "mime": "image/png"
+    },
+    {
+     "id": "d3",
+     "declared": "cancelled_cheque",
+     "file": "cancelled_cheque.png",
+     "mime": "image/png"
+    }
+   ],
+   "truth": [
+    {
+     "doc_id": "d1",
+     "detected": "gst_certificate",
+     "fields": {
+      "legal_name": "RATHNA OFFICE AUTOMATION PVT LTD",
+      "trade_name": "RATHNA OFFICE AUTOMATION PVT LTD",
+      "gstin": "33AAGCR5523H1ZI",
+      "constitution": "Private Limited Company",
+      "address": "88, Anna Salai, Teynampet, Chennai, Tamil Nadu 600018",
+      "state": "Tamil Nadu",
+      "registration_date": "2018-02-14",
+      "status": "Active"
+     }
+    },
+    {
+     "doc_id": "d2",
+     "detected": "pan_card",
+     "fields": {
+      "name": "APEX OFFICE SYSTEMS PVT LTD",
+      "pan": "AAFCA7781Q"
+     }
+    },
+    {
+     "doc_id": "d3",
+     "detected": "cancelled_cheque",
+     "fields": {
+      "account_name": "APEX OFFICE SYSTEMS PVT LTD",
+      "account_number": "917020077810",
+      "ifsc": "UTIB0000006",
+      "bank_name": "Axis Bank"
+     }
+    }
+   ]
+  },
+  {
+   "id": "v04",
+   "type": "Edge case",
+   "scenario": "GST registration was cancelled, though the vendor sent an old certificate",
+   "expect": "rejected",
+   "title": "Velan Electrical Contractors",
+   "email": {
+    "from": "S. Velan <velanelectricals@outlook.com>",
+    "subject": "Velan Electrical Contractors: vendor documents",
+    "body": "Sir, attaching our registration papers for the electrical AMC at your stores.",
+    "received": "2026-11-05T13:28:00+05:30"
+   },
+   "submission": {
+    "legal_name": "Velan Electrical Contractors",
+    "trade_name": null,
+    "business_type": "Partnership",
+    "gstin": "33AAJFV3318E1ZE",
+    "pan": "AAJFV3318E",
+    "address": {
+     "line": "5/2, Arcot Road, Vadapalani",
+     "city": "Chennai",
+     "state": "Tamil Nadu",
+     "pin": "600026"
+    },
+    "contact": {
+     "name": "S. Velan",
+     "email": "velanelectricals@outlook.com",
+     "phone": "+91 98400 33180"
+    },
+    "bank": {
+     "account_name": "Velan Electrical Contractors",
+     "account_number": "10023318001",
+     "ifsc": "SBIN0000800",
+     "bank_name": "State Bank of India"
+    },
+    "category": "Services",
+    "msme": true,
+    "udyam": "UDYAM-TN-02-0033181",
+    "sponsor": {
+     "name": "Mohan S.",
+     "department": "Facilities"
+    }
+   },
+   "docs": [
+    {
+     "id": "d1",
+     "declared": "gst_certificate",
+     "file": "gst_certificate.pdf",
+     "mime": "application/pdf"
+    },
+    {
+     "id": "d2",
+     "declared": "pan_card",
+     "file": "pan_card.png",
+     "mime": "image/png"
+    },
+    {
+     "id": "d3",
+     "declared": "cancelled_cheque",
+     "file": "cancelled_cheque.png",
+     "mime": "image/png"
+    },
+    {
+     "id": "d4",
+     "declared": "msme_certificate",
+     "file": "udyam_certificate.pdf",
+     "mime": "application/pdf"
+    }
+   ],
+   "truth": [
+    {
+     "doc_id": "d1",
+     "detected": "gst_certificate",
+     "fields": {
+      "legal_name": "VELAN ELECTRICAL CONTRACTORS",
+      "trade_name": "VELAN ELECTRICAL CONTRACTORS",
+      "gstin": "33AAJFV3318E1ZE",
+      "constitution": "Partnership",
+      "address": "5/2, Arcot Road, Vadapalani, Chennai, Tamil Nadu 600026",
+      "state": "Tamil Nadu",
+      "registration_date": "2016-11-20",
+      "status": "Active"
+     }
+    },
+    {
+     "doc_id": "d2",
+     "detected": "pan_card",
+     "fields": {
+      "name": "VELAN ELECTRICAL CONTRACTORS",
+      "pan": "AAJFV3318E"
+     }
+    },
+    {
+     "doc_id": "d3",
+     "detected": "cancelled_cheque",
+     "fields": {
+      "account_name": "VELAN ELECTRICAL CONTRACTORS",
+      "account_number": "10023318001",
+      "ifsc": "SBIN0000800",
+      "bank_name": "State Bank of India"
+     }
+    },
+    {
+     "doc_id": "d4",
+     "detected": "msme_certificate",
+     "fields": {
+      "name": "VELAN ELECTRICAL CONTRACTORS",
+      "udyam": "UDYAM-TN-02-0033181"
+     }
+    }
+   ]
+  },
+  {
+   "id": "v05",
+   "type": "Edge case",
+   "scenario": "Bank account already belongs to an approved vendor (Kaveri Office Supplies): fraud pattern",
+   "expect": "rejected",
+   "title": "Shree Kaveri Traders",
+   "email": {
+    "from": "K. Senthil <kaveritraders.tn@gmail.com>",
+    "subject": "Vendor onboarding: Shree Kaveri Traders",
+    "body": "Hi, we supply stationery. Please onboard us urgently, your Admin team knows us. Bank details are in the form.",
+    "received": "2026-11-01T14:35:00+05:30"
+   },
+   "submission": {
+    "legal_name": "Shree Kaveri Traders",
+    "trade_name": null,
+    "business_type": "Proprietorship",
+    "gstin": "33CXRPS4521L1ZX",
+    "pan": "CXRPS4521L",
+    "address": {
+     "line": "9, Usman Road, T. Nagar",
+     "city": "Chennai",
+     "state": "Tamil Nadu",
+     "pin": "600017"
+    },
+    "contact": {
+     "name": "K. Senthil",
+     "email": "kaveritraders.tn@gmail.com",
+     "phone": "+91 97890 45210"
+    },
+    "bank": {
+     "account_name": "Shree Kaveri Traders",
+     "account_number": "50200045214521",
+     "ifsc": "HDFC0001234",
+     "bank_name": "HDFC Bank"
+    },
+    "category": "Goods",
+    "msme": false,
+    "udyam": null,
+    "sponsor": {
+     "name": "Divya N.",
+     "department": "Admin"
+    }
+   },
+   "docs": [
+    {
+     "id": "d1",
+     "declared": "gst_certificate",
+     "file": "gst_certificate.pdf",
+     "mime": "application/pdf"
+    },
+    {
+     "id": "d2",
+     "declared": "pan_card",
+     "file": "pan_card.png",
+     "mime": "image/png"
+    },
+    {
+     "id": "d3",
+     "declared": "cancelled_cheque",
+     "file": "cancelled_cheque.png",
+     "mime": "image/png"
+    }
+   ],
+   "truth": [
+    {
+     "doc_id": "d1",
+     "detected": "gst_certificate",
+     "fields": {
+      "legal_name": "SHREE KAVERI TRADERS",
+      "trade_name": "SHREE KAVERI TRADERS",
+      "gstin": "33CXRPS4521L1ZX",
+      "constitution": "Proprietorship",
+      "address": "9, Usman Road, T. Nagar, Chennai, Tamil Nadu 600017",
+      "state": "Tamil Nadu",
+      "registration_date": "2025-12-02",
+      "status": "Active"
+     }
+    },
+    {
+     "doc_id": "d2",
+     "detected": "pan_card",
+     "fields": {
+      "name": "K SENTHIL",
+      "pan": "CXRPS4521L"
+     }
+    },
+    {
+     "doc_id": "d3",
+     "detected": "cancelled_cheque",
+     "fields": {
+      "account_name": "K SENTHIL",
+      "account_number": "50200045214521",
+      "ifsc": "HDFC0001234",
+      "bank_name": "HDFC Bank"
+     }
+    }
+   ]
+  },
+  {
+   "id": "v06",
+   "type": "Edge case",
+   "scenario": "Wrong document: a second PAN card uploaded where the cancelled cheque should be",
+   "expect": "pending",
+   "title": "Nilgiri IT Services Pvt Ltd",
+   "email": {
+    "from": "Priya Menon <ap@nilgiriit.com>",
+    "subject": "Nilgiri IT Services: onboarding pack",
+    "body": "Hello, attached are our documents for the laptop support contract.",
+    "received": "2026-11-02T15:42:00+05:30"
+   },
+   "submission": {
+    "legal_name": "Nilgiri IT Services Pvt Ltd",
+    "trade_name": null,
+    "business_type": "Private Limited",
+    "gstin": "29AAHCN8820G1Z6",
+    "pan": "AAHCN8820G",
+    "address": {
+     "line": "3rd Floor, 41 RT Nagar Main Road",
+     "city": "Bengaluru",
+     "state": "Karnataka",
+     "pin": "560032"
+    },
+    "contact": {
+     "name": "Priya Menon",
+     "email": "ap@nilgiriit.com",
+     "phone": "+91 80 4123 8820"
+    },
+    "bank": {
+     "account_name": "Nilgiri IT Services Pvt Ltd",
+     "account_number": "50200098820123",
+     "ifsc": "HDFC0000140",
+     "bank_name": "HDFC Bank"
+    },
+    "category": "Services",
+    "msme": false,
+    "udyam": null,
+    "sponsor": {
+     "name": "Karthik S.",
+     "department": "IT"
+    }
+   },
+   "docs": [
+    {
+     "id": "d1",
+     "declared": "gst_certificate",
+     "file": "gst_certificate.pdf",
+     "mime": "application/pdf"
+    },
+    {
+     "id": "d2",
+     "declared": "pan_card",
+     "file": "pan_card.png",
+     "mime": "image/png"
+    },
+    {
+     "id": "d3",
+     "declared": "cancelled_cheque",
+     "file": "pan_card_copy.png",
+     "mime": "image/png"
+    }
+   ],
+   "truth": [
+    {
+     "doc_id": "d1",
+     "detected": "gst_certificate",
+     "fields": {
+      "legal_name": "NILGIRI IT SERVICES PVT LTD",
+      "trade_name": "NILGIRI IT SERVICES PVT LTD",
+      "gstin": "29AAHCN8820G1Z6",
+      "constitution": "Private Limited Company",
+      "address": "3rd Floor, 41 RT Nagar Main Road, Bengaluru, Karnataka 560032",
+      "state": "Karnataka",
+      "registration_date": "2020-07-09",
+      "status": "Active"
+     }
+    },
+    {
+     "doc_id": "d2",
+     "detected": "pan_card",
+     "fields": {
+      "name": "NILGIRI IT SERVICES PVT LTD",
+      "pan": "AAHCN8820G"
+     }
+    },
+    {
+     "doc_id": "d3",
+     "detected": "pan_card",
+     "fields": {
+      "name": "NILGIRI IT SERVICES PVT LTD",
+      "pan": "AAHCN8820G"
+     }
+    }
+   ]
+  },
+  {
+   "id": "v07",
+   "type": "Approved, with a twist",
+   "scenario": "Trades under a different name (LNE Office Interiors); legal identity consistent everywhere",
+   "expect": "approved",
+   "title": "LNE Office Interiors (Lakshmi Narayan Enterprises Pvt Ltd)",
+   "email": {
+    "from": "Lakshmi Narayan <accounts@lneinteriors.in>",
+    "subject": "Onboarding: LNE Office Interiors",
+    "body": "Dear Northwind procurement, we are Lakshmi Narayan Enterprises, trading as LNE Office Interiors, for the new store fit-outs.",
+    "received": "2026-11-03T16:49:00+05:30"
+   },
+   "submission": {
+    "legal_name": "Lakshmi Narayan Enterprises Pvt Ltd",
+    "trade_name": "LNE Office Interiors",
+    "business_type": "Private Limited",
+    "gstin": "33AADCL6620B1Z3",
+    "pan": "AADCL6620B",
+    "address": {
+     "line": "27, Venkatnarayana Road, T. Nagar",
+     "city": "Chennai",
+     "state": "Tamil Nadu",
+     "pin": "600017"
+    },
+    "contact": {
+     "name": "Lakshmi Narayan",
+     "email": "accounts@lneinteriors.in",
+     "phone": "+91 44 2815 6620"
+    },
+    "bank": {
+     "account_name": "Lakshmi Narayan Enterprises Pvt Ltd",
+     "account_number": "4613066201",
+     "ifsc": "KKBK0000462",
+     "bank_name": "Kotak Mahindra Bank"
+    },
+    "category": "Services",
+    "msme": false,
+    "udyam": null,
+    "sponsor": {
+     "name": "Vikram P.",
+     "department": "Store Fit-outs"
+    }
+   },
+   "docs": [
+    {
+     "id": "d1",
+     "declared": "gst_certificate",
+     "file": "gst_certificate.pdf",
+     "mime": "application/pdf"
+    },
+    {
+     "id": "d2",
+     "declared": "pan_card",
+     "file": "pan_card.png",
+     "mime": "image/png"
+    },
+    {
+     "id": "d3",
+     "declared": "cancelled_cheque",
+     "file": "cancelled_cheque.png",
+     "mime": "image/png"
+    }
+   ],
+   "truth": [
+    {
+     "doc_id": "d1",
+     "detected": "gst_certificate",
+     "fields": {
+      "legal_name": "LAKSHMI NARAYAN ENTERPRISES PVT LTD",
+      "trade_name": "LNE OFFICE INTERIORS",
+      "gstin": "33AADCL6620B1Z3",
+      "constitution": "Private Limited Company",
+      "address": "27, Venkatnarayana Road, T. Nagar, Chennai, Tamil Nadu 600017",
+      "state": "Tamil Nadu",
+      "registration_date": "2015-05-18",
+      "status": "Active"
+     }
+    },
+    {
+     "doc_id": "d2",
+     "detected": "pan_card",
+     "fields": {
+      "name": "LAKSHMI NARAYAN ENTERPRISES PVT LTD",
+      "pan": "AADCL6620B"
+     }
+    },
+    {
+     "doc_id": "d3",
+     "detected": "cancelled_cheque",
+     "fields": {
+      "account_name": "LAKSHMI NARAYAN ENTERPRISES PVT LTD",
+      "account_number": "4613066201",
+      "ifsc": "KKBK0000462",
+      "bank_name": "Kotak Mahindra Bank"
+     }
+    }
+   ]
+  },
+  {
+   "id": "v08",
+   "type": "Approved, with a twist",
+   "scenario": "Sole proprietor: bank account in the owner's own name, scanned documents",
+   "expect": "approved",
+   "title": "Murugan Electricals (R Murugan)",
+   "email": {
+    "from": "R. Murugan <murugan.electricals@gmail.com>",
+    "subject": "Murugan Electricals registration",
+    "body": "Sir, sending scanned copies of my documents. I am the proprietor.",
+    "received": "2026-11-04T09:56:00+05:30"
+   },
+   "submission": {
+    "legal_name": "R Murugan",
+    "trade_name": "Murugan Electricals",
+    "business_type": "Proprietorship",
+    "gstin": "33BKMPM6612D1ZC",
+    "pan": "BKMPM6612D",
+    "address": {
+     "line": "112, Mint Street, Sowcarpet",
+     "city": "Chennai",
+     "state": "Tamil Nadu",
+     "pin": "600079"
+    },
+    "contact": {
+     "name": "R. Murugan",
+     "email": "murugan.electricals@gmail.com",
+     "phone": "+91 98410 66120"
+    },
+    "bank": {
+     "account_name": "R Murugan",
+     "account_number": "510101006612",
+     "ifsc": "CIUB0000001",
+     "bank_name": "City Union Bank"
+    },
+    "category": "Goods",
+    "msme": true,
+    "udyam": "UDYAM-TN-02-0066120",
+    "sponsor": {
+     "name": "Mohan S.",
+     "department": "Facilities"
+    }
+   },
+   "docs": [
+    {
+     "id": "d1",
+     "declared": "gst_certificate",
+     "file": "gst_certificate.jpg",
+     "mime": "image/jpeg"
+    },
+    {
+     "id": "d2",
+     "declared": "pan_card",
+     "file": "pan_card.jpg",
+     "mime": "image/jpeg"
+    },
+    {
+     "id": "d3",
+     "declared": "cancelled_cheque",
+     "file": "cancelled_cheque.jpg",
+     "mime": "image/jpeg"
+    },
+    {
+     "id": "d4",
+     "declared": "msme_certificate",
+     "file": "udyam_certificate.pdf",
+     "mime": "application/pdf"
+    }
+   ],
+   "truth": [
+    {
+     "doc_id": "d1",
+     "detected": "gst_certificate",
+     "fields": {
+      "legal_name": "R MURUGAN",
+      "trade_name": "MURUGAN ELECTRICALS",
+      "gstin": "33BKMPM6612D1ZC",
+      "constitution": "Proprietorship",
+      "address": "112, Mint Street, Sowcarpet, Chennai, Tamil Nadu 600079",
+      "state": "Tamil Nadu",
+      "registration_date": "2012-03-05",
+      "status": "Active"
+     }
+    },
+    {
+     "doc_id": "d2",
+     "detected": "pan_card",
+     "fields": {
+      "name": "R MURUGAN",
+      "pan": "BKMPM6612D"
+     }
+    },
+    {
+     "doc_id": "d3",
+     "detected": "cancelled_cheque",
+     "fields": {
+      "account_name": "R MURUGAN",
+      "account_number": "510101006612",
+      "ifsc": "CIUB0000001",
+      "bank_name": "City Union Bank"
+     }
+    },
+    {
+     "doc_id": "d4",
+     "detected": "msme_certificate",
+     "fields": {
+      "name": "R MURUGAN",
+      "udyam": "UDYAM-TN-02-0066120"
+     }
+    }
+   ]
+  },
+  {
+   "id": "v09",
+   "type": "Edge case",
+   "scenario": "Declared a private limited company, but PAN and GST say it is a partnership",
+   "expect": "pending",
+   "title": "Coromandel Logistics",
+   "email": {
+    "from": "Faisal Ahmed <ops@coromandellogistics.in>",
+    "subject": "Coromandel Logistics: vendor registration",
+    "body": "Please register us for warehouse transport services. Documents attached.",
+    "received": "2026-11-05T10:03:00+05:30"
+   },
+   "submission": {
+    "legal_name": "Coromandel Logistics",
+    "trade_name": null,
+    "business_type": "Private Limited",
+    "gstin": "33AAMFC4471R1ZV",
+    "pan": "AAMFC4471R",
+    "address": {
+     "line": "Door 61, Ennore High Road, Tiruvottiyur",
+     "city": "Chennai",
+     "state": "Tamil Nadu",
+     "pin": "600019"
+    },
+    "contact": {
+     "name": "Faisal Ahmed",
+     "email": "ops@coromandellogistics.in",
+     "phone": "+91 44 2599 4471"
+    },
+    "bank": {
+     "account_name": "Coromandel Logistics",
+     "account_number": "6612044710",
+     "ifsc": "IOBA0000002",
+     "bank_name": "Indian Overseas Bank"
+    },
+    "category": "Services",
+    "msme": false,
+    "udyam": null,
+    "sponsor": {
+     "name": "Ravi K.",
+     "department": "Warehouse"
+    }
+   },
+   "docs": [
+    {
+     "id": "d1",
+     "declared": "gst_certificate",
+     "file": "gst_certificate.pdf",
+     "mime": "application/pdf"
+    },
+    {
+     "id": "d2",
+     "declared": "pan_card",
+     "file": "pan_card.png",
+     "mime": "image/png"
+    },
+    {
+     "id": "d3",
+     "declared": "cancelled_cheque",
+     "file": "cancelled_cheque.png",
+     "mime": "image/png"
+    }
+   ],
+   "truth": [
+    {
+     "doc_id": "d1",
+     "detected": "gst_certificate",
+     "fields": {
+      "legal_name": "COROMANDEL LOGISTICS",
+      "trade_name": "COROMANDEL LOGISTICS",
+      "gstin": "33AAMFC4471R1ZV",
+      "constitution": "Partnership",
+      "address": "Door 61, Ennore High Road, Tiruvottiyur, Chennai, Tamil Nadu 600019",
+      "state": "Tamil Nadu",
+      "registration_date": "2014-09-30",
+      "status": "Active"
+     }
+    },
+    {
+     "doc_id": "d2",
+     "detected": "pan_card",
+     "fields": {
+      "name": "COROMANDEL LOGISTICS",
+      "pan": "AAMFC4471R"
+     }
+    },
+    {
+     "doc_id": "d3",
+     "detected": "cancelled_cheque",
+     "fields": {
+      "account_name": "COROMANDEL LOGISTICS",
+      "account_number": "6612044710",
+      "ifsc": "IOBA0000002",
+      "bank_name": "Indian Overseas Bank"
+     }
+    }
+   ]
+  },
+  {
+   "id": "v10",
+   "type": "Edge case",
+   "scenario": "No single failure, but high risk: registered 18 days ago, Gmail address, no Northwind sponsor",
+   "expect": "pending",
+   "title": "Swift Supply Co",
+   "email": {
+    "from": "Arun Kumar <swiftsupplyco2026@gmail.com>",
+    "subject": "Supplier registration: Swift Supply Co",
+    "body": "Hi, we can supply all office items at lowest price. Please register fast so we can start this week.",
+    "received": "2026-11-01T11:10:00+05:30"
+   },
+   "submission": {
+    "legal_name": "Swift Supply Co",
+    "trade_name": null,
+    "business_type": "Proprietorship",
+    "gstin": "33DJKPK8812F1Z6",
+    "pan": "DJKPK8812F",
+    "address": {
+     "line": "Shop 4, 2nd Floor, Ritchie Street",
+     "city": "Chennai",
+     "state": "Tamil Nadu",
+     "pin": "600002"
+    },
+    "contact": {
+     "name": "Arun Kumar",
+     "email": "swiftsupplyco2026@gmail.com",
+     "phone": "+91 90031 88120"
+    },
+    "bank": {
+     "account_name": "Arun Kumar",
+     "account_number": "20881200345",
+     "ifsc": "SBIN0000800",
+     "bank_name": "State Bank of India"
+    },
+    "category": "Goods",
+    "msme": false,
+    "udyam": null,
+    "sponsor": null
+   },
+   "docs": [
+    {
+     "id": "d1",
+     "declared": "gst_certificate",
+     "file": "gst_certificate.pdf",
+     "mime": "application/pdf"
+    },
+    {
+     "id": "d2",
+     "declared": "pan_card",
+     "file": "pan_card.png",
+     "mime": "image/png"
+    },
+    {
+     "id": "d3",
+     "declared": "cancelled_cheque",
+     "file": "cancelled_cheque.png",
+     "mime": "image/png"
+    }
+   ],
+   "truth": [
+    {
+     "doc_id": "d1",
+     "detected": "gst_certificate",
+     "fields": {
+      "legal_name": "SWIFT SUPPLY CO",
+      "trade_name": "SWIFT SUPPLY CO",
+      "gstin": "33DJKPK8812F1Z6",
+      "constitution": "Proprietorship",
+      "address": "Shop 4, 2nd Floor, Ritchie Street, Chennai, Tamil Nadu 600002",
+      "state": "Tamil Nadu",
+      "registration_date": "2026-10-18",
+      "status": "Active"
+     }
+    },
+    {
+     "doc_id": "d2",
+     "detected": "pan_card",
+     "fields": {
+      "name": "ARUN KUMAR",
+      "pan": "DJKPK8812F"
+     }
+    },
+    {
+     "doc_id": "d3",
+     "detected": "cancelled_cheque",
+     "fields": {
+      "account_name": "ARUN KUMAR",
+      "account_number": "20881200345",
+      "ifsc": "SBIN0000800",
+      "bank_name": "State Bank of India"
+     }
+    }
+   ]
+  }
+ ],
+ "registry": {
+  "33AAECB4417K1ZU": {
+   "legal_name": "BRIGHTLINE FACILITY SERVICES PVT LTD",
+   "trade_name": "BRIGHTLINE FACILITY SERVICES PVT LTD",
+   "constitution": "Private Limited Company",
+   "status": "Active",
+   "registration_date": "2019-04-12",
+   "cancellation_date": null,
+   "state": "Tamil Nadu",
+   "principal_place": "14, Cathedral Road, Gopalapuram, Chennai 600086"
+  },
+  "33AAKCS2290M1Z0": {
+   "legal_name": "SUNDARAM PACKAGING SOLUTIONS PVT LTD",
+   "trade_name": "SUNDARAM PACKAGING SOLUTIONS PVT LTD",
+   "constitution": "Private Limited Company",
+   "status": "Active",
+   "registration_date": "2017-08-01",
+   "cancellation_date": null,
+   "state": "Tamil Nadu",
+   "principal_place": "Plot 22, SIDCO Industrial Estate, Ambattur, Chennai 600098"
+  },
+  "33AAGCR5523H1ZI": {
+   "legal_name": "RATHNA OFFICE AUTOMATION PVT LTD",
+   "trade_name": "RATHNA OFFICE AUTOMATION PVT LTD",
+   "constitution": "Private Limited Company",
+   "status": "Active",
+   "registration_date": "2018-02-14",
+   "cancellation_date": null,
+   "state": "Tamil Nadu",
+   "principal_place": "88, Anna Salai, Teynampet, Chennai 600018"
+  },
+  "33AAJFV3318E1ZE": {
+   "legal_name": "VELAN ELECTRICAL CONTRACTORS",
+   "trade_name": "VELAN ELECTRICAL CONTRACTORS",
+   "constitution": "Partnership",
+   "status": "Cancelled",
+   "registration_date": "2016-11-20",
+   "cancellation_date": "2026-06-30",
+   "state": "Tamil Nadu",
+   "principal_place": "5/2, Arcot Road, Vadapalani, Chennai 600026"
+  },
+  "33CXRPS4521L1ZX": {
+   "legal_name": "SHREE KAVERI TRADERS",
+   "trade_name": "SHREE KAVERI TRADERS",
+   "constitution": "Proprietorship",
+   "status": "Active",
+   "registration_date": "2025-12-02",
+   "cancellation_date": null,
+   "state": "Tamil Nadu",
+   "principal_place": "9, Usman Road, T. Nagar, Chennai 600017"
+  },
+  "29AAHCN8820G1Z6": {
+   "legal_name": "NILGIRI IT SERVICES PVT LTD",
+   "trade_name": "NILGIRI IT SERVICES PVT LTD",
+   "constitution": "Private Limited Company",
+   "status": "Active",
+   "registration_date": "2020-07-09",
+   "cancellation_date": null,
+   "state": "Karnataka",
+   "principal_place": "3rd Floor, 41 RT Nagar Main Road, Bengaluru 560032"
+  },
+  "33AADCL6620B1Z3": {
+   "legal_name": "LAKSHMI NARAYAN ENTERPRISES PVT LTD",
+   "trade_name": "LNE OFFICE INTERIORS",
+   "constitution": "Private Limited Company",
+   "status": "Active",
+   "registration_date": "2015-05-18",
+   "cancellation_date": null,
+   "state": "Tamil Nadu",
+   "principal_place": "27, Venkatnarayana Road, T. Nagar, Chennai 600017"
+  },
+  "33BKMPM6612D1ZC": {
+   "legal_name": "R MURUGAN",
+   "trade_name": "MURUGAN ELECTRICALS",
+   "constitution": "Proprietorship",
+   "status": "Active",
+   "registration_date": "2012-03-05",
+   "cancellation_date": null,
+   "state": "Tamil Nadu",
+   "principal_place": "112, Mint Street, Sowcarpet, Chennai 600079"
+  },
+  "33AAMFC4471R1ZV": {
+   "legal_name": "COROMANDEL LOGISTICS",
+   "trade_name": "COROMANDEL LOGISTICS",
+   "constitution": "Partnership",
+   "status": "Active",
+   "registration_date": "2014-09-30",
+   "cancellation_date": null,
+   "state": "Tamil Nadu",
+   "principal_place": "Door 61, Ennore High Road, Tiruvottiyur, Chennai 600019"
+  },
+  "33DJKPK8812F1Z6": {
+   "legal_name": "SWIFT SUPPLY CO",
+   "trade_name": "SWIFT SUPPLY CO",
+   "constitution": "Proprietorship",
+   "status": "Active",
+   "registration_date": "2026-10-18",
+   "cancellation_date": null,
+   "state": "Tamil Nadu",
+   "principal_place": "Shop 4, 2nd Floor, Ritchie Street, Chennai 600002"
+  }
+ },
+ "bank_records": {
+  "50200045214521": {
+   "holder": "KAVERI OFFICE SUPPLIES PVT LTD",
+   "ifsc": "HDFC0001234",
+   "status": "Active"
+  },
+  "000405077781": {
+   "holder": "NIMBUS CLOUD SERVICES PVT LTD",
+   "ifsc": "ICIC0000456",
+   "status": "Active"
+  },
+  "917020043390": {
+   "holder": "SHAKTI INDUSTRIAL TOOLS LLP",
+   "ifsc": "UTIB0000789",
+   "status": "Active"
+  },
+  "38829106612": {
+   "holder": "GREENLEAF FACILITY SERVICES PVT LTD",
+   "ifsc": "SBIN0004321",
+   "status": "Active"
+  },
+  "1187201002205": {
+   "holder": "ORBIT ELECTRICALS & CONTROLS",
+   "ifsc": "CNRB0001187",
+   "status": "Active"
+  },
+  "4612058814": {
+   "holder": "MERIDIAN PACKAGING PVT LTD",
+   "ifsc": "KKBK0000321",
+   "status": "Active"
+  },
+  "50200012344417": {
+   "holder": "BRIGHTLINE FACILITY SERVICES PVT LTD",
+   "ifsc": "HDFC0000082",
+   "status": "Active"
+  },
+  "661205004455": {
+   "holder": "SUNDARAM TRADERS",
+   "ifsc": "ICIC0000001",
+   "status": "Active"
+  },
+  "917020077810": {
+   "holder": "APEX OFFICE SYSTEMS PVT LTD",
+   "ifsc": "UTIB0000006",
+   "status": "Active"
+  },
+  "10023318001": {
+   "holder": "VELAN ELECTRICAL CONTRACTORS",
+   "ifsc": "SBIN0000800",
+   "status": "Active"
+  },
+  "50200098820123": {
+   "holder": "NILGIRI IT SERVICES PVT LTD",
+   "ifsc": "HDFC0000140",
+   "status": "Active"
+  },
+  "4613066201": {
+   "holder": "LAKSHMI NARAYAN ENTERPRISES PVT LTD",
+   "ifsc": "KKBK0000462",
+   "status": "Active"
+  },
+  "510101006612": {
+   "holder": "R MURUGAN",
+   "ifsc": "CIUB0000001",
+   "status": "Active"
+  },
+  "6612044710": {
+   "holder": "COROMANDEL LOGISTICS",
+   "ifsc": "IOBA0000002",
+   "status": "Active"
+  },
+  "20881200345": {
+   "holder": "ARUN KUMAR",
+   "ifsc": "SBIN0000800",
+   "status": "Active"
+  },
+  "661205009871": {
+   "holder": "SUNDARAM PACKAGING SOLUTIONS PRIVATE LIMITED",
+   "ifsc": "ICIC0000001",
+   "status": "Active"
+  }
+ },
+ "fix_v02": {
+  "bank": {
+   "account_name": "Sundaram Packaging Solutions Pvt Ltd",
+   "account_number": "661205009871",
+   "ifsc": "ICIC0000001",
+   "bank_name": "ICICI Bank"
+  },
+  "doc": {
+   "declared": "cancelled_cheque",
+   "file": "fix_cancelled_cheque.png",
+   "mime": "image/png"
+  }
+ },
+ "fixes": {
+  "v02": {
+   "bank": {
+    "account_name": "Sundaram Packaging Solutions Pvt Ltd",
+    "account_number": "661205009871",
+    "ifsc": "ICIC0000001",
+    "bank_name": "ICICI Bank"
+   },
+   "file": "fix_cancelled_cheque.png",
+   "holder": "SUNDARAM PACKAGING SOLUTIONS PVT LTD"
+  },
+  "v06": {
+   "bank": null,
+   "file": "fix_cancelled_cheque.png",
+   "holder": "NILGIRI IT SERVICES PVT LTD"
+  },
+  "v09": {
+   "fields": {
+    "business_type": "Partnership"
+   }
+  }
+ },
+ "verity_vendors": [
+  {
+   "id": "V-101",
+   "name": "Kaveri Office Supplies Pvt Ltd",
+   "gstin": "33AABCK4521M1ZN",
+   "pan": "AABCK4521M",
+   "account_number": "50200045214521",
+   "ifsc": "HDFC0001234",
+   "bank_name": "HDFC Bank",
+   "phone": "+91 44 2434 1180",
+   "email": "accounts@kaverioffice.in",
+   "address": "22, Ranganathan Street, T. Nagar, Chennai 600017"
+  },
+  {
+   "id": "V-102",
+   "name": "Nimbus Cloud Services Pvt Ltd",
+   "gstin": "29AACCN7781Q1ZG",
+   "pan": "AACCN7781Q",
+   "account_number": "000405077781",
+   "ifsc": "ICIC0000456",
+   "bank_name": "ICICI Bank",
+   "phone": "+91 80 4718 2200",
+   "email": "billing@nimbuscloud.io",
+   "address": "Prestige Tech Park, Marathahalli, Bengaluru 560103"
+  },
+  {
+   "id": "V-103",
+   "name": "Shakti Industrial Tools LLP",
+   "gstin": "27AAKFS3390B1Z7",
+   "pan": "AAKFS3390B",
+   "account_number": "917020043390",
+   "ifsc": "UTIB0000789",
+   "bank_name": "Axis Bank",
+   "phone": "+91 20 2712 5590",
+   "email": "ar@shaktitools.co.in",
+   "address": "Plot 18, MIDC Bhosari, Pune 411026"
+  },
+  {
+   "id": "V-104",
+   "name": "Greenleaf Facility Services Pvt Ltd",
+   "gstin": "33AADCG6612H1ZW",
+   "pan": "AADCG6612H",
+   "account_number": "38829106612",
+   "ifsc": "SBIN0004321",
+   "bank_name": "State Bank of India",
+   "phone": "+91 44 4210 6612",
+   "email": "accounts@greenleaffs.in",
+   "address": "7/3, 2nd Main Road, Adyar, Chennai 600020"
+  },
+  {
+   "id": "V-105",
+   "name": "Orbit Electricals & Controls",
+   "gstin": "33ABJPO2205K1ZT",
+   "pan": "ABJPO2205K",
+   "account_number": "1187201002205",
+   "ifsc": "CNRB0001187",
+   "bank_name": "Canara Bank",
+   "phone": "+91 98410 22050",
+   "email": "orbit.elec@gmail.com",
+   "address": "41, Pycrofts Road, Royapettah, Chennai 600014"
+  },
+  {
+   "id": "V-106",
+   "name": "Meridian Packaging Pvt Ltd",
+   "gstin": "24AAECM8814D1ZO",
+   "pan": "AAECM8814D",
+   "account_number": "4612058814",
+   "ifsc": "KKBK0000321",
+   "bank_name": "Kotak Mahindra Bank",
+   "phone": "+91 79 2689 8814",
+   "email": "finance@meridianpack.in",
+   "address": "Changodar Industrial Estate, Ahmedabad 382213"
+  }
+ ]
+}
