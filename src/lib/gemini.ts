@@ -140,12 +140,12 @@ export async function aiSameEntity(a: string, b: string, context: string, notify
 export async function aiExplain(ctx: { decision: string; waiting_on: string | null; vendor: { name: string; contact: string; email: string }; findings: Finding[]; fix_link: string | null; vendor_id: string | null; round: number }, notify?: Notify) {
   const system = `You are a senior procurement lead writing for (1) a busy onboarding reviewer and (2) the vendor.
 The decision has ALREADY been made by deterministic rules: explain it, never change it, never invent problems that are not in the findings.
-Plain, specific English. No jargon, no hedging, no markdown, never use em dashes (use commas, colons or full stops).
+Plain, specific English. No jargon, no hedging, no markdown, never use em dashes (use commas, colons or full stops). Never invent facts, IDs, dates or numbers that are not in the input.
 - headline: one line, max 12 words.
 - summary: 2–3 sentences for the reviewer: who the vendor is, the decision, the single most important reason.
 - next_steps: 1–4 short actions for the procurement team that fit the decision. approved: the vendor is set up, what to tell them. pending with waiting_on "vendor": wait for the vendor's fix, chase if no reply. pending with waiting_on "reviewer": what to check before deciding (never write "approve" or "reject" as a done step). rejected: close it and inform the vendor.
 - vendor_email: always write one, signed "Vendor Onboarding, Northwind Retail India", addressed to the contact by name.
-  approved: welcome them, give the vendor ID, say invoices should quote it and the PO number.
+  approved: a short welcome (the system adds the vendor ID itself; never write or invent an ID or any number not given to you).
   pending + vendor: list EXACTLY what is needed, one numbered item per finding with severity "vendor", in plain words, and give the fix link (they only need to fix those items, nothing else).
   pending + reviewer: say the submission is being reviewed and nothing is needed from them right now.
   rejected: polite and firm. If any finding code starts with FRAUD, do NOT reveal what was detected or which vendor is involved: say only that the registration can't be completed and to contact their Northwind sponsor. Otherwise state the reason plainly and what would let them apply again.

@@ -437,15 +437,15 @@ async function explain(ctx: Ctx, s: Stage, d: { decision: Decision; waiting_on: 
   const base: Outcome = { decision: d.decision, waiting_on: d.waiting_on, risk: d.risk, findings: ctx.findings, asks, vendor_id: vendorId, explained_by: 'template', ...template(ctx, d, asks) }
   const fx = d.waiting_on === 'vendor' ? fixLink(run) : null
   if (!aiConfigured()) { s.checks.push({ label: 'Explanation', status: 'info', detail: 'Written from templates (live AI not configured)' }); s.summary = 'Explained from templates'; return base }
-  const key = 'exp:' + sha256(JSON.stringify({ c: run.case_id.startsWith('c_') && run.sample_id ? run.sample_id : run.id, r: run.round, d, f: ctx.findings.map(f => [f.code, f.severity, f.detail]) }))
+  const key = 'exp2:' + sha256(JSON.stringify({ c: run.case_id.startsWith('c_') && run.sample_id ? run.sample_id : run.id, r: run.round, d, f: ctx.findings.map(f => [f.code, f.severity, f.detail]) }))
   const cached = await ctx.store.getReading(key).catch(() => null)
   try {
-    const r = (cached?.data as unknown as Awaited<ReturnType<typeof aiExplain>>) || await withBudget(aiExplain({ decision: d.decision, waiting_on: d.waiting_on, vendor: { name: sub.legal_name, contact: sub.contact.name, email: sub.contact.email }, findings: ctx.findings, fix_link: fx, vendor_id: d.decision === 'approved' ? '(assigned on approval)' : null, round: run.round }))
+    const r = (cached?.data as unknown as Awaited<ReturnType<typeof aiExplain>>) || await withBudget(aiExplain({ decision: d.decision, waiting_on: d.waiting_on, vendor: { name: sub.legal_name, contact: sub.contact.name, email: sub.contact.email }, findings: ctx.findings, fix_link: fx, vendor_id: null, round: run.round }))
     if (!cached) ctx.store.saveReading(key, r as unknown as DocReading, 'explain').catch(() => {})
     s.checks.push({ label: 'Reviewer summary', status: 'pass', detail: nd(r.headline) })
     s.checks.push({ label: 'Vendor email', status: 'pass', detail: nd(r.vendor_email.subject) })
     s.summary = 'Reasoning and vendor email written by Gemini'
-    return { ...base, headline: nd(r.headline), summary: nd(r.summary), next_steps: r.next_steps.map(nd), vendor_email: { to: sub.contact.email, subject: nd(r.vendor_email.subject), body: nd(r.vendor_email.body).replace(/\(assigned on approval\)/g, 'VENDOR_ID') }, explained_by: 'ai' }
+    return { ...base, headline: nd(r.headline), summary: nd(r.summary), next_steps: r.next_steps.map(nd), vendor_email: d.decision === 'approved' ? base.vendor_email : { to: sub.contact.email, subject: nd(r.vendor_email.subject), body: nd(r.vendor_email.body) }, explained_by: 'ai' }
   } catch {
     s.checks.push({ label: 'Explanation', status: 'info', detail: 'AI explanation timed out, written from templates' }); s.summary = 'Explained from templates'; return base
   }
