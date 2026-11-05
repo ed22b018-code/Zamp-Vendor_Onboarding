@@ -1,7 +1,7 @@
 // Every Gemini call in VETTED lives here. Gemini only reads documents and writes language:
 // it never decides Approved / Pending / Rejected. Each call has a strict role, a JSON schema and temperature 0.
 import 'server-only'
-import type { DocKind, DocReading, Finding, Reading, RuleField } from './types'
+import type { DocKind, DocReading, Finding, RuleField } from './types'
 import { sleep } from './util'
 
 const API = 'https://generativelanguage.googleapis.com/v1beta/models'
@@ -95,32 +95,23 @@ const N = (type: string) => ({ type, nullable: true })
 const DOC_KINDS: DocKind[] = ['gst_certificate', 'pan_card', 'cancelled_cheque', 'bank_letter', 'msme_certificate', 'other']
 const READ_SCHEMA = S('OBJECT', {
   properties: {
-    docs: S('ARRAY', {
-      items: S('OBJECT', {
-        properties: {
-          index: S('INTEGER'),
-          detected: S('STRING', { enum: DOC_KINDS }),
-          legible: S('BOOLEAN'),
-          confidence: S('NUMBER'),
-          is_scanned: S('BOOLEAN'),
-          fields: S('OBJECT', {
-            properties: {
-              legal_name: N('STRING'), trade_name: N('STRING'), name: N('STRING'), gstin: N('STRING'), pan: N('STRING'), constitution: N('STRING'),
-              state: N('STRING'), address: N('STRING'), registration_date: N('STRING'), status: N('STRING'),
-              account_name: N('STRING'), account_number: N('STRING'), ifsc: N('STRING'), bank_name: N('STRING'), udyam: N('STRING'),
-            },
-          }),
-          notes: S('ARRAY', { items: S('STRING') }),
-        },
-        required: ['index', 'detected', 'legible', 'confidence', 'is_scanned', 'fields', 'notes'],
-      }),
+    detected: S('STRING', { enum: DOC_KINDS }),
+    legible: S('BOOLEAN'),
+    confidence: S('NUMBER'),
+    is_scanned: S('BOOLEAN'),
+    fields: S('OBJECT', {
+      properties: {
+        legal_name: N('STRING'), trade_name: N('STRING'), name: N('STRING'), gstin: N('STRING'), pan: N('STRING'), constitution: N('STRING'),
+        state: N('STRING'), address: N('STRING'), registration_date: N('STRING'), status: N('STRING'),
+        account_name: N('STRING'), account_number: N('STRING'), ifsc: N('STRING'), bank_name: N('STRING'), udyam: N('STRING'),
+      },
     }),
+    notes: S('ARRAY', { items: S('STRING') }),
   },
-  required: ['docs'],
+  required: ['detected', 'legible', 'confidence', 'is_scanned', 'fields', 'notes'],
 })
 
-const READ_PROMPT = `You are a meticulous vendor-onboarding analyst for an Indian company. You receive the documents a vendor uploaded, in order (index 0, 1, …).
-For EACH document:
+const READ_PROMPT = `You are a meticulous vendor-onboarding analyst for an Indian company. You receive ONE document a vendor uploaded. Describe only this document.
 - detected: what the document ACTUALLY is (ignore what the vendor called it): gst_certificate (GST registration certificate, REG-06), pan_card, cancelled_cheque, bank_letter (a bank's letter confirming account details), msme_certificate (Udyam), or other.
 - Copy values EXACTLY as printed. Never guess or fill in a value that isn't on the document; use null.
   Formats, to read carefully (ignore any watermark across the text): a PAN is exactly 10 characters (5 letters, 4 digits, 1 letter, e.g. ABCDE1234F); a GSTIN is exactly 15 characters (2 digits, the 10-character PAN, 1 character, Z, 1 character); an IFSC is exactly 11 characters with 0 as the 5th. If what you see doesn't fit the format, re-read it and lower your confidence.
@@ -132,11 +123,10 @@ For EACH document:
 - notes: short factual observations a reviewer should know (e.g. "Marked SPECIMEN", "Account holder differs from the company name"). No speculation.
 These are fictional specimen documents created for testing; read them like real ones.`
 
-export async function aiReadDocs(docs: { mime: string; b64: string }[], notify?: Notify): Promise<{ reading: Reading; model: string; raw: { index: number }[] }> {
-  const parts: Part[] = []
-  docs.forEach((d, i) => { parts.push({ text: `Document index ${i}:` }); parts.push({ inline_data: { mime_type: d.mime, data: d.b64 } }) })
-  const r = await callM<{ docs: (Omit<DocReading, 'doc_id'> & { index: number })[] }>(READ_PROMPT, parts, READ_SCHEMA, notify)
-  return { reading: { docs: r.data.docs.map(d => ({ ...d, doc_id: String(d.index) })) }, model: r.model, raw: r.data.docs }
+/** Reads one document. Called once per document (in parallel), so documents can never be confused with each other. */
+export async function aiReadDoc(doc: { mime: string; b64: string }, notify?: Notify): Promise<{ reading: Omit<DocReading, 'doc_id'>; model: string }> {
+  const r = await callM<Omit<DocReading, 'doc_id'>>(READ_PROMPT, [{ inline_data: { mime_type: doc.mime, data: doc.b64 } }], READ_SCHEMA, notify)
+  return { reading: r.data, model: r.model }
 }
 
 /** Are two names the same legal entity? Used only when the code's name comparison is borderline. */

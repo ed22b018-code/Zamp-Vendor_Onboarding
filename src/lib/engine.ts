@@ -5,7 +5,7 @@ import { createHash } from 'crypto'
 import { readFileSync } from 'fs'
 import path from 'path'
 import { BANK_RECORDS, BLOCKLIST, BUYER, CONSTITUTION, FREE_EMAIL, IFSC_SNAPSHOT, PAN_ENTITY, REGISTRY, requiredDocs, VENDORS } from '@/data/master'
-import { AIError, aiConfigured, aiExplain, aiReadDocs, aiSameEntity } from './gemini'
+import { AIError, aiConfigured, aiExplain, aiReadDoc, aiSameEntity } from './gemini'
 import { ruleSentence } from './rules'
 import { cachedByFile, sampleById } from './samples'
 import type { Store } from './store'
@@ -155,19 +155,26 @@ async function readDocs(ctx: Ctx, s: Stage) {
   if (todo.length) {
     const bufs = await Promise.all(todo.map(d => docBytes(st, run, d)))
     if (bufs.some(b => !b)) throw new Error('A document file is missing')
-    let done = false
-    if (aiConfigured()) {
-      try {
-        const r = await aiReadDocs(todo.map((d, i) => ({ mime: d.mime, b64: bufs[i]!.toString('base64') })), notify)
-        todo.forEach((d, i) => { const x = r.reading.docs.find(z => Number(z.doc_id) === i) || r.reading.docs[i]; if (x) { const dr = { ...x, doc_id: d.id }; ctx.reads.set(d.id, dr); st.saveReading(d.sha, dr, r.model).catch(() => {}) } })
-        run.reading_model = r.model; source = 'ai'; done = true
-      } catch (e) { notify(`Live AI unavailable (${(e as AIError).message})`) }
-    }
-    if (!done) {
-      const cached = run.sample_id && settings.useCachedReadings ? await Promise.all(todo.map(async (d, i) => { const ref = sampleFile(run.sample_id!, d.file_name); return ref && sha256(ref) === sha256(bufs[i]!) ? cachedByFile(run.sample_id!, d.file_name) : null })) : []
-      if (cached.length === todo.length && cached.every(Boolean)) { todo.forEach((d, i) => ctx.reads.set(d.id, { ...cached[i]!, doc_id: d.id })); source = 'cached' }
-      else throw new Error('Documents could not be read: live AI is unavailable and there is no saved reading for these files')
-    }
+    const models = new Set<string>()
+    let ai = 0, saved = 0
+    await Promise.all(todo.map(async (d, i) => {
+      if (aiConfigured()) {
+        try {
+          const r = await aiReadDoc({ mime: d.mime, b64: bufs[i]!.toString('base64') }, notify)
+          const dr: DocReading = { ...r.reading, doc_id: d.id }
+          ctx.reads.set(d.id, dr); models.add(r.model); ai++
+          st.saveReading(d.sha, dr, r.model).catch(() => {})
+          return
+        } catch (e) { notify(`Live AI unavailable for ${d.file_name} (${(e as AIError).message})`) }
+      }
+      const ref = run.sample_id && settings.useCachedReadings ? sampleFile(run.sample_id, d.file_name) : null
+      const c = ref && sha256(ref) === sha256(bufs[i]!) ? cachedByFile(run.sample_id!, d.file_name) : null
+      if (c) { ctx.reads.set(d.id, { ...c, doc_id: d.id }); saved++ }
+    }))
+    const missing = todo.filter(d => !ctx.reads.has(d.id))
+    if (missing.length) throw new Error(`Could not read ${missing.map(d => d.file_name).join(', ')}: live AI is unavailable and there is no saved reading`)
+    run.reading_model = [...models].join(', ') || null
+    source = ai ? 'ai' : saved ? 'cached' : 'reused'
   }
   run.reading = { docs: sub.documents.map(d => ctx.reads.get(d.id)!).filter(Boolean) }; run.reading_source = source
   emit({ type: 'reading', reading: run.reading, source })
