@@ -16,7 +16,7 @@ export default function Dashboard() {
   const [q, setQ] = useState('')
   const s = computeStats(data || [])
   const cases = useMemo(() => [...s.latest].sort((a, b) => b.created_at.localeCompare(a.created_at)), [s.latest])
-  const shown = cases.filter(r => { const c = currentState(r); return (f === 'all' || c.decision === f || c.waiting === f) && (!q || `${r.submission.legal_name} ${r.submission.trade_name || ''} ${r.submission.gstin}`.toLowerCase().includes(q.toLowerCase())) })
+  const shown = cases.filter(r => { const c = currentState(r); return (f === 'all' || c.decision === f || c.waiting === f) && (!q || `${r.submission.legal_name} ${r.submission.trade_name || ''} ${r.submission.gstin || ''} ${r.submission.tax_id || ''}`.toLowerCase().includes(q.toLowerCase())) })
   const maxReason = Math.max(1, ...s.reasons.map(r => r[1]))
   const waiting = cases.filter(r => currentState(r).waiting === 'vendor')
 
@@ -28,7 +28,7 @@ export default function Dashboard() {
         <Link href="/inbox" className="btn ghost">Process more <IArrow /></Link>
       </div>
       {!data ? <div className="card empty">Loading…</div> : cases.length === 0 ? (
-        <div className="card empty"><h3>No registrations checked yet</h3><p>Open the onboarding inbox and run the checks on a submission, or all ten at once.</p><Link href="/inbox" className="btn blue" style={{ marginTop: 10 }}>Open the inbox <IArrow /></Link></div>
+        <div className="card empty"><h3>No registrations checked yet</h3><p>Open the onboarding inbox and run the checks on a submission, or all twelve at once.</p><Link href="/inbox" className="btn blue" style={{ marginTop: 10 }}>Open the inbox <IArrow /></Link></div>
       ) : <>
         <div className="grid-6">
           <Kpi k="Vendors checked" v={String(s.cases)} sub={`${s.rounds} rounds of checks`} />
@@ -74,17 +74,17 @@ export default function Dashboard() {
             <div className="seg" style={{ overflowX: 'auto', maxWidth: '100%' }}>{([['all', 'All'], ['approved', 'Approved'], ['vendor', 'Waiting on vendor'], ['reviewer', 'Needs review'], ['rejected', 'Rejected']] as [Filter, string][]).map(([k, l]) => <button key={k} className={f === k ? 'on' : ''} onClick={() => setF(k)}>{l}</button>)}</div>
             <div className="right row" style={{ position: 'relative', minWidth: 200 }}>
               <ISearch style={{ position: 'absolute', left: 10, width: 16, color: 'var(--faint)' }} />
-              <input className="input" style={{ height: 34, paddingLeft: 32, borderRadius: 99 }} placeholder="Search vendor or GSTIN" value={q} onChange={e => setQ(e.target.value)} />
+              <input className="input" style={{ height: 34, paddingLeft: 32, borderRadius: 99 }} placeholder="Search vendor or tax ID" value={q} onChange={e => setQ(e.target.value)} />
             </div>
           </div>
           <div className="scroll-x t-desktop">
             <table className="t">
-              <thead><tr><th>Vendor</th><th>Type</th><th>GSTIN</th><th>Status</th><th className="r">Risk</th><th className="r">Rounds</th><th>Main reason</th><th>Vendor ID</th><th>When</th></tr></thead>
+              <thead><tr><th>Vendor</th><th>Type</th><th>GSTIN / tax ID</th><th>Status</th><th className="r">Risk</th><th className="r">Rounds</th><th>Main reason</th><th>Vendor ID</th><th>When</th></tr></thead>
               <tbody>{shown.map(r => { const c = currentState(r); const main = r.outcome?.findings.find(x => x.severity !== 'info'); return (
                 <tr key={r.id} className="click" onClick={() => router.push(`/runs/${r.id}`)}>
                   <td style={{ fontWeight: 600, maxWidth: 220 }} className="ellipsis">{r.submission.trade_name || r.submission.legal_name}</td>
                   <td className="small muted">{r.submission.business_type}</td>
-                  <td className="mono small">{r.submission.gstin}</td>
+                  <td className="mono small">{r.submission.country && r.submission.country !== 'India' ? <>{r.submission.tax_id}<div className="tiny muted" style={{ fontFamily: 'inherit' }}>{r.submission.country}</div></> : r.submission.gstin}</td>
                   <td><DecisionPill d={c.decision} waiting={c.waiting} reviewed={!!r.review} /></td>
                   <td className="r num">{r.outcome?.risk ?? '-'}</td>
                   <td className="r num">{r.round}</td>
@@ -104,7 +104,7 @@ export default function Dashboard() {
           </div>
           {!shown.length && <div className="empty small">No vendors match.</div>}
         </div>
-        <p className="tiny faint" style={{ marginTop: 10 }}>Time saved assumes about {MIN_BY_HAND} minutes for a person to check one registration by hand (documents, GST portal, bank, duplicates) and 10 minutes for a reviewer to clear a pre-analysed case. GST registry and penny-drop results are simulated; IFSC lookups are live.</p>
+        <p className="tiny faint" style={{ marginTop: 10 }}>Time saved assumes about {MIN_BY_HAND} minutes for a person to check one registration by hand (documents, GST portal, bank, duplicates) and 10 minutes for a reviewer to clear a pre-analysed case. GST registry and penny-drop results are simulated; IFSC lookups are live. Foreign tax IDs and IBANs are checked offline by their published check-digit rules.</p>
       </>}
     </div>
   )
@@ -114,8 +114,8 @@ function Kpi({ k, v, sub }: { k: string; v: string; sub: string }) { return <div
 
 function exportCsv(rows: RunRow[]) {
   const esc = (v: unknown) => { const t = v == null ? '' : String(v); return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t }
-  const head = ['Checked at', 'Legal name', 'Trade name', 'Business type', 'GSTIN', 'PAN', 'Status', 'Waiting on', 'Risk', 'Rounds', 'Vendor ID', 'Main reason', 'All rules fired', 'Reviewer', 'Reviewer note']
-  const out = rows.map(r => { const c = currentState(r); return [r.created_at, r.submission.legal_name, r.submission.trade_name, r.submission.business_type, r.submission.gstin, r.submission.pan, c.decision, c.waiting, r.outcome?.risk, r.round, r.outcome?.vendor_id, r.outcome?.findings.find(x => x.severity !== 'info')?.title || 'All checks passed', (r.outcome?.findings || []).map(x => x.code).join(' '), r.review?.reviewer, r.review?.note] })
+  const head = ['Checked at', 'Legal name', 'Trade name', 'Business type', 'Country', 'GSTIN / tax ID', 'PAN', 'Status', 'Waiting on', 'Risk', 'Rounds', 'Vendor ID', 'Main reason', 'All rules fired', 'Reviewer', 'Reviewer note']
+  const out = rows.map(r => { const c = currentState(r); return [r.created_at, r.submission.legal_name, r.submission.trade_name, r.submission.business_type, r.submission.country || 'India', r.submission.country && r.submission.country !== 'India' ? r.submission.tax_id : r.submission.gstin, r.submission.pan, c.decision, c.waiting, r.outcome?.risk, r.round, r.outcome?.vendor_id, r.outcome?.findings.find(x => x.severity !== 'info')?.title || 'All checks passed', (r.outcome?.findings || []).map(x => x.code).join(' '), r.review?.reviewer, r.review?.note] })
   const csv = '﻿' + [head, ...out].map(r => r.map(esc).join(',')).join('\n')
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); a.download = `vetted-vendors-${new Date().toISOString().slice(0, 10)}.csv`; a.click(); URL.revokeObjectURL(a.href)
 }

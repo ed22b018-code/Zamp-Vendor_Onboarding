@@ -10,7 +10,7 @@ import { latestOfCase } from '@/lib/cases'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const FIELD_LABEL: Record<string, string> = { legal_name: 'legal name', trade_name: 'trade name', business_type: 'business type', gstin: 'GSTIN', pan: 'PAN', account_number: 'bank account', ifsc: 'IFSC', account_name: 'account name', bank_name: 'bank', udyam: 'Udyam number', address_line: 'address', city: 'city', state: 'state', pin: 'PIN code', email: 'email' }
+const FIELD_LABEL: Record<string, string> = { country: 'country', tax_id: 'tax ID', swift: 'SWIFT code', iban: 'IBAN', legal_name: 'legal name', trade_name: 'trade name', business_type: 'business type', gstin: 'GSTIN', pan: 'PAN', account_number: 'bank account', ifsc: 'IFSC', account_name: 'account name', bank_name: 'bank', udyam: 'Udyam number', address_line: 'address', city: 'city', state: 'state', pin: 'PIN code', email: 'email' }
 
 export async function POST(req: Request, { params }: { params: Promise<{ caseId: string }> }) {
   const { caseId } = await params
@@ -29,7 +29,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ caseId:
   if (error) return NextResponse.json({ error }, { status: 400 })
   // A new document replaces the earlier one of the same kind (and a wrongly-labelled one).
   const replaced = new Set(docs.map(d => d.declared))
-  const keep = base.documents.filter(d => !replaced.has(d.declared) && !(replaced.has('cancelled_cheque') && d.declared === 'bank_letter') && !(replaced.has('bank_letter') && d.declared === 'cancelled_cheque'))
+  const keep = base.documents.filter(d => !replaced.has(d.declared) && !(replaced.has('cancelled_cheque') && d.declared === 'bank_letter') && !(replaced.has('bank_letter') && d.declared === 'cancelled_cheque') && !(replaced.has('tax_certificate') && d.declared === 'gst_certificate'))
   const changes: string[] = []
   for (const [k, label] of Object.entries(FIELD_LABEL)) {
     const before = JSON.stringify(flat(base)[k] ?? ''), after = JSON.stringify(flat(merged)[k] ?? '')
@@ -44,6 +44,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ caseId:
   await st.addAudit({ run_id: run.id, actor: base.contact.name || 'Vendor', action: 'resubmitted', detail: `Round ${run.round}: ${changes.join('; ')}` })
   return NextResponse.json({ case_id: run.case_id, id: run.id })
 }
-function flat(s: { legal_name: string; trade_name: string | null; business_type: string; gstin: string; pan: string; bank: Record<string, unknown>; udyam: string | null; address: Record<string, unknown>; contact: Record<string, unknown> }): Record<string, unknown> {
-  return { legal_name: s.legal_name, trade_name: s.trade_name, business_type: s.business_type, gstin: s.gstin, pan: s.pan, ...s.bank, udyam: s.udyam, address_line: s.address.line, city: s.address.city, state: s.address.state, pin: s.address.pin, email: s.contact.email }
+function flat(s: { country: string; tax_id: string | null; legal_name: string; trade_name: string | null; business_type: string; gstin: string; pan: string; bank: Record<string, unknown>; udyam: string | null; address: Record<string, unknown>; contact: Record<string, unknown> }): Record<string, unknown> {
+  return { country: s.country, tax_id: s.tax_id, legal_name: s.legal_name, trade_name: s.trade_name, business_type: s.business_type, gstin: s.gstin, pan: s.pan, ...s.bank, udyam: s.udyam, address_line: s.address.line, city: s.address.city, state: s.address.state, pin: s.address.pin, email: s.contact.email }
 }

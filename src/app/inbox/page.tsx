@@ -114,8 +114,13 @@ export default function Inbox() {
               <dl className="kv">
                 <dt>Legal name</dt><dd>{current.submission.legal_name}{current.submission.trade_name ? <span className="muted"> · trades as {current.submission.trade_name}</span> : null}</dd>
                 <dt>Business type</dt><dd>{current.submission.business_type} · {current.submission.category}{current.submission.msme ? ' · MSME' : ''}</dd>
+                {current.submission.country && current.submission.country !== 'India' ? <>
+                <dt>Country · Tax ID</dt><dd>{current.submission.country} · <span className="mono">{current.submission.tax_id}</span></dd>
+                <dt>Bank</dt><dd>{current.submission.bank.bank_name} ••{current.submission.bank.account_number.slice(-4)} · <span className="mono">{current.submission.bank.swift}</span></dd>
+                </> : <>
                 <dt>GSTIN · PAN</dt><dd className="mono">{current.submission.gstin} · {current.submission.pan}</dd>
                 <dt>Bank</dt><dd>{current.submission.bank.bank_name} ••{current.submission.bank.account_number.slice(-4)} · <span className="mono">{current.submission.bank.ifsc}</span></dd>
+                </>}
                 <dt>Sponsor</dt><dd>{current.submission.sponsor ? `${current.submission.sponsor.name}, ${current.submission.sponsor.department}` : <span className="muted">None named</span>}</dd>
               </dl>
               <div className="stack" style={{ gap: 8 }}>

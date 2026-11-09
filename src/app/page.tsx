@@ -108,7 +108,7 @@ function SiteFooter() {
       <details className="assume">
         <summary>Assumptions</summary>
         <ul>
-          <li>The buyer is Northwind Retail India, Chennai. Vendors are Indian businesses registered under GST.</li>
+          <li>The buyer is Northwind Retail India, Chennai. Most vendors are Indian businesses registered under GST; foreign vendors (US, UK, UAE, Singapore) are checked against their own country's tax ID and bank rules.</li>
           <li>The vendor master is shared with accounts payable (the same one VERITY pays from). Approved vendors are added to it.</li>
           <li>GST registry lookups and bank penny-drop results are simulated with realistic data. IFSC lookups are real, against the public IFSC directory.</li>
           <li>A vendor is approved only when every check passes; anything uncertain goes to the vendor (an exact ask) or to a reviewer (a judgement call), never silently through.</li>

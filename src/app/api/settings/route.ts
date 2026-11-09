@@ -16,7 +16,7 @@ export async function PUT(req: Request) {
     nameMatchStrict: clamp(b.nameMatchStrict, 0.6, 1, d.nameMatchStrict), minConfidence: clamp(b.minConfidence, 0.5, 1, d.minConfidence),
     newRegistrationDays: clamp(b.newRegistrationDays, 0, 730, d.newRegistrationDays), riskReviewThreshold: clamp(b.riskReviewThreshold, 10, 100, d.riskReviewThreshold),
     freeEmailAction: b.freeEmailAction === 'review' ? 'review' : 'info', requireMsmeCert: b.requireMsmeCert !== false, requireSponsor: Boolean(b.requireSponsor),
-    sharedBankAction: b.sharedBankAction === 'review' ? 'review' : 'reject', liveIfsc: b.liveIfsc !== false, customRules: sanitizeRules(b.customRules), useCachedReadings: b.useCachedReadings !== false,
+    sharedBankAction: b.sharedBankAction === 'review' ? 'review' : 'reject', liveIfsc: b.liveIfsc !== false, foreignNeedsReview: Boolean(b.foreignNeedsReview), customRules: sanitizeRules(b.customRules), useCachedReadings: b.useCachedReadings !== false,
   }
   const st = store(); const before = await st.getSettings()
   await st.saveSettings(s)

@@ -33,7 +33,7 @@ export function cachedReading(sampleId: string, docIds: string[]): Reading | nul
   return docs.length === docIds.length ? { docs } : null
 }
 
-export type DemoFix = { bank?: Submission['bank'] | null; file?: string; holder?: string; fields?: Record<string, string> }
+export type DemoFix = { bank?: Submission['bank'] | null; file?: string; holder?: string; fields?: Record<string, string>; files?: { kind: DocKind; file: string; fields: DocReading['fields'] }[] }
 export const FIXES = (data as unknown as { fixes: Record<string, DemoFix> }).fixes
 
 /** Cached reading for a document by its file name within a sample folder (includes the demo corrections). */
@@ -42,6 +42,8 @@ export function cachedByFile(sampleId: string, file: string): DocReading | null 
   const d = s.docs.find(x => x.file === file)
   if (d) return cachedDoc(sampleId, d.id)
   const fx = FIXES[sampleId]
+  const extra = fx?.files?.find(x => x.file === file)
+  if (extra) return { doc_id: 'fix', detected: extra.kind, legible: true, confidence: 0.98, is_scanned: false, notes: [], fields: extra.fields }
   if (fx?.file === file) {
     const bank = fx.bank || s.submission.bank
     return { doc_id: 'fix', detected: 'cancelled_cheque', legible: true, confidence: 0.98, is_scanned: false, notes: [], fields: { account_name: fx.holder || bank.account_name.toUpperCase(), account_number: bank.account_number, ifsc: bank.ifsc, bank_name: bank.bank_name } }

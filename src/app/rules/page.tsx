@@ -74,6 +74,9 @@ export default function Rules() {
             <Rule title="Free webmail contact" desc="Gmail, Yahoo and similar addresses: note it and add risk, or always send to a reviewer.">
               <div className="seg">{(['info', 'review'] as const).map(k => <button key={k} className={s.freeEmailAction === k ? 'on' : ''} onClick={() => set('freeEmailAction', k)}>{k === 'info' ? 'Note + risk' : 'Reviewer'}</button>)}</div>
             </Rule>
+            <Rule title="Foreign vendors need a reviewer" desc="Vendors registered outside India pass the same checks with their own tax ID and IBAN rules. On: also send every foreign vendor to a person (cross-border payments, withholding tax).">
+              <Toggle on={!!s.foreignNeedsReview} set={v => set('foreignNeedsReview', v)} />
+            </Rule>
             <Rule title="Require a Northwind sponsor" desc="Every new vendor must name the Northwind employee who asked for them. Off: a missing sponsor only adds risk.">
               <Toggle on={s.requireSponsor} set={v => set('requireSponsor', v)} />
             </Rule>
@@ -83,7 +86,7 @@ export default function Rules() {
             <Rule title="Live IFSC lookup" desc="Check the bank branch against the public IFSC directory in real time. Off: use the saved snapshot.">
               <Toggle on={s.liveIfsc} set={v => set('liveIfsc', v)} />
             </Rule>
-            <Rule title="Saved readings as fallback" desc="If live AI is unavailable, the 10 sample submissions use their saved Gemini reading, clearly labelled, so a demo never stalls.">
+            <Rule title="Saved readings as fallback" desc="If live AI is unavailable, the 12 sample submissions use their saved Gemini reading, clearly labelled, so a demo never stalls.">
               <Toggle on={s.useCachedReadings} set={v => set('useCachedReadings', v)} />
             </Rule>
           </div>

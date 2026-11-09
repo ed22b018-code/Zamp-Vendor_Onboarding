@@ -3,14 +3,19 @@
 
 export type BusinessType = 'Private Limited' | 'Public Limited' | 'LLP' | 'Partnership' | 'Proprietorship'
 export const BUSINESS_TYPES: BusinessType[] = ['Private Limited', 'Public Limited', 'LLP', 'Partnership', 'Proprietorship']
-export type DocKind = 'gst_certificate' | 'pan_card' | 'cancelled_cheque' | 'bank_letter' | 'msme_certificate' | 'other'
+export type DocKind = 'gst_certificate' | 'pan_card' | 'cancelled_cheque' | 'bank_letter' | 'msme_certificate' | 'tax_certificate' | 'other'
 export const DOC_LABEL: Record<DocKind, string> = {
-  gst_certificate: 'GST registration certificate', pan_card: 'PAN card', cancelled_cheque: 'Cancelled cheque', bank_letter: 'Bank letter', msme_certificate: 'MSME (Udyam) certificate', other: 'Other document',
+  gst_certificate: 'GST registration certificate', pan_card: 'PAN card', cancelled_cheque: 'Cancelled cheque', bank_letter: 'Bank letter', msme_certificate: 'MSME (Udyam) certificate', tax_certificate: 'Tax registration certificate', other: 'Other document',
 }
 
 export type SubmissionDoc = { id: string; declared: DocKind; file_name: string; mime: string; sha: string; bytes: number }
 
+export type Country = 'India' | 'United States' | 'United Kingdom' | 'United Arab Emirates' | 'Singapore'
+export const COUNTRIES: Country[] = ['India', 'United States', 'United Kingdom', 'United Arab Emirates', 'Singapore']
+
 export type Submission = {
+  country: Country
+  tax_id: string | null           // the national tax ID for non-Indian vendors (EIN, VAT, TRN, GST/UEN)
   legal_name: string
   trade_name: string | null
   business_type: BusinessType
@@ -18,7 +23,7 @@ export type Submission = {
   pan: string
   address: { line: string; city: string; state: string; pin: string }
   contact: { name: string; email: string; phone: string }
-  bank: { account_name: string; account_number: string; ifsc: string; bank_name: string | null }
+  bank: { account_name: string; account_number: string; ifsc: string; bank_name: string | null; swift?: string | null; iban?: string | null }
   category: 'Goods' | 'Services'
   msme: boolean
   udyam: string | null
@@ -38,7 +43,7 @@ export type DocReading = {
     gstin?: string | null; pan?: string | null; constitution?: string | null; state?: string | null; address?: string | null
     registration_date?: string | null; status?: string | null
     account_name?: string | null; account_number?: string | null; ifsc?: string | null; bank_name?: string | null
-    udyam?: string | null; date_of_birth_or_incorporation?: string | null
+    udyam?: string | null; date_of_birth_or_incorporation?: string | null; tax_id?: string | null; country?: string | null; swift?: string | null; iban?: string | null
   }
   notes: string[]
 }
@@ -55,7 +60,7 @@ export type Severity = 'reject' | 'vendor' | 'review' | 'info'
 export type Finding = { code: string; severity: Severity; stage: StageKey; title: string; detail: string; ask?: Ask | null }
 /** A precise request back to the vendor; drives the fix page. */
 export type Ask = { kind: 'document'; doc: DocKind; text: string } | { kind: 'field'; field: FixField; text: string } | { kind: 'confirm'; text: string }
-export type FixField = 'legal_name' | 'business_type' | 'gstin' | 'pan' | 'bank' | 'udyam' | 'address' | 'email'
+export type FixField = 'legal_name' | 'business_type' | 'gstin' | 'pan' | 'bank' | 'udyam' | 'address' | 'email' | 'country' | 'tax_id'
 
 export type Decision = 'approved' | 'pending' | 'rejected'
 
@@ -118,7 +123,7 @@ export type Vendor = {
 
 export type AuditEntry = { id: string; run_id: string | null; at: string; actor: string; action: string; detail: string }
 
-export type RuleField = 'legal_name' | 'business_type' | 'state' | 'category' | 'msme' | 'email_domain' | 'sponsor_department' | 'risk' | 'registration_age_days'
+export type RuleField = 'legal_name' | 'country' | 'business_type' | 'state' | 'category' | 'msme' | 'email_domain' | 'sponsor_department' | 'risk' | 'registration_age_days'
 export type RuleOp = 'is' | 'is_not' | 'contains' | 'not_contains' | 'gt' | 'lt'
 export type CustomRule = { id: string; name: string; enabled: boolean; conditions: { field: RuleField; op: RuleOp; value: string }[]; action: 'review' | 'reject' | 'note'; message: string }
 
@@ -132,6 +137,7 @@ export type Settings = {
   requireSponsor: boolean
   sharedBankAction: 'reject' | 'review'
   liveIfsc: boolean
+  foreignNeedsReview: boolean
   customRules: CustomRule[]
   useCachedReadings: boolean
 }

@@ -129,7 +129,7 @@ for sid, v in V.items():
         docs.append({'id': 'd4', 'declared': 'msme_certificate', 'file': 'udyam_certificate.pdf'})
     for d in docs:
         d['mime'] = {'pdf': 'application/pdf', 'png': 'image/png', 'jpg': 'image/jpeg'}[d['file'].split('.')[-1]]
-    sub = {'legal_name': v['legal'], 'trade_name': v['trade'], 'business_type': v['btype'], 'gstin': g, 'pan': v['pan'],
+    sub = {'country': 'India', 'tax_id': None, 'legal_name': v['legal'], 'trade_name': v['trade'], 'business_type': v['btype'], 'gstin': g, 'pan': v['pan'],
            'address': {'line': v['line'], 'city': v['city'], 'state': STATE_NAME[v['st']], 'pin': v['pin']},
            'contact': {'name': v['contact'][0], 'email': v['contact'][1], 'phone': v['contact'][2]},
            'bank': {'account_name': v['bank'][0], 'account_number': v['bank'][1], 'ifsc': v['bank'][2], 'bank_name': v['bank'][3]},
@@ -155,6 +155,68 @@ for sid, v in V.items():
                               'received': f"2026-11-0{1 + int(sid[1:]) % 5}T{9 + int(sid[1:]) % 8:02d}:{(int(sid[1:]) * 7) % 60:02d}:00+05:30"},
                     'submission': sub, 'docs': docs, 'truth': truth, '_v': v})
 
+
+# ---------------------------------------------------------------- non-Indian vendors
+def uk_vat(first7):
+    t = sum(w * int(d) for w, d in zip([8, 7, 6, 5, 4, 3, 2], first7))
+    c = (97 - t % 97) % 97
+    return 'GB' + first7 + f'{c:02d}'
+
+def iban(cc, bban):
+    moved = bban + cc + '00'
+    num = ''.join(str(ord(ch) - 55) if ch.isalpha() else ch for ch in moved)
+    return f'{cc}{98 - int(num) % 97:02d}{bban}'
+
+def letter_pdf(path, title, lines, footer_bank):
+    c = canvas.Canvas(path, pagesize=A4, invariant=1); w, h = A4
+    c.setFont('Helvetica-Bold', 14); c.drawString(60, h - 70, footer_bank)
+    c.setFont('Helvetica-Bold', 13); c.drawString(60, h - 120, title)
+    y = h - 160
+    for k, val in lines:
+        c.setFont('Helvetica', 10); c.setFillColor(HexColor('#444444')); c.drawString(60, y, k)
+        c.setFont('Helvetica-Bold', 10); c.setFillColor(HexColor('#111111')); c.drawString(240, y, val); y -= 24
+    specimen_pdf(c, w, h); c.save()
+
+FX = {}
+vat12 = uk_vat('2936152')
+iban12 = iban('GB', 'BARC' + '200000' + '41708823')
+FX['v12'] = dict(legal='Thames Analytics Ltd', country='United Kingdom', tax_id=vat12, btype='Private Limited',
+                 line='3rd Floor, 21 Southwark Street', city='London', state='England', pin='SE1 1RQ', contact=('Olivia Hart', 'billing@thamesanalytics.co.uk', '+44 20 7946 0213'),
+                 bank=dict(account_name='Thames Analytics Ltd', account_number='41708823', ifsc='', bank_name='Barclays Bank UK PLC', swift='BARCGB22', iban=iban12), cat='Services', sponsor=('Karthik S.', 'IT'))
+gst11 = gstin('27', 'AAJCA4410P')
+FX['v11'] = dict(legal='Atlas Freight Ltd', country='United Kingdom', tax_id=gst11, btype='Private Limited',
+                 line='Unit 4, Royal Docks Business Park', city='London', state='England', pin='E16 2PY', contact=('Rahul Mehta', 'rahul@atlasfreight.co.uk', '+44 20 3051 4410'),
+                 bank=dict(account_name='Atlas Freight Pvt Ltd', account_number='50200077441100', ifsc='HDFC0000240', bank_name='HDFC Bank', swift='HDFCINBB', iban=None), cat='Services', sponsor=('Ravi K.', 'Warehouse'))
+SCEN['v11'] = ('Edge case', 'Claims to be a UK company, but its tax ID is an Indian GSTIN and its bank is in India', 'pending')
+SCEN['v12'] = ('Approved, with a twist', 'Genuine UK vendor: valid VAT number and IBAN; withholding-tax paperwork noted for the first payment', 'approved')
+EMAIL['v11'] = ('Atlas Freight: UK vendor registration', 'Hello, we are a UK freight forwarder. Please register us for your import shipments. VAT details and bank letter attached.')
+EMAIL['v12'] = ('Thames Analytics: supplier onboarding', 'Dear Northwind team, please find our VAT registration certificate and bank letter for the analytics subscription.')
+REGISTRY[gst11] = {'legal_name': 'ATLAS FREIGHT PVT LTD', 'trade_name': 'ATLAS FREIGHT PVT LTD', 'constitution': 'Private Limited Company', 'status': 'Active', 'registration_date': '2019-06-11', 'cancellation_date': None, 'state': 'Maharashtra', 'principal_place': 'Andheri East, Mumbai 400069'}
+BANK[iban12] = {'holder': 'THAMES ANALYTICS LTD', 'ifsc': 'BARCGB22', 'status': 'Active'}
+# Atlas Freight's round 2: its real UK VAT registration and a London account.
+vat11 = uk_vat('4418207')
+iban11 = iban('GB', 'LOYD' + '309634' + '11447723')
+FIX11 = dict(tax_id=vat11, bank=dict(account_name='Atlas Freight Ltd', account_number='11447723', ifsc='', bank_name='Lloyds Bank plc', swift='LOYDGB2L', iban=iban11))
+BANK[iban11] = {'holder': 'ATLAS FREIGHT LTD', 'ifsc': 'LOYDGB2L', 'status': 'Active'}
+
+for sid in ['v11', 'v12']:
+    v = FX[sid]
+    docs = [{'id': 'd1', 'declared': 'tax_certificate', 'file': 'tax_certificate.pdf', 'mime': 'application/pdf'}, {'id': 'd2', 'declared': 'bank_letter', 'file': 'bank_letter.pdf', 'mime': 'application/pdf'}]
+    sub = {'country': v['country'], 'tax_id': v['tax_id'], 'legal_name': v['legal'], 'trade_name': None, 'business_type': v['btype'], 'gstin': '', 'pan': '',
+           'address': {'line': v['line'], 'city': v['city'], 'state': v['state'], 'pin': v['pin']}, 'contact': {'name': v['contact'][0], 'email': v['contact'][1], 'phone': v['contact'][2]},
+           'bank': v['bank'], 'category': v['cat'], 'msme': False, 'udyam': None, 'sponsor': {'name': v['sponsor'][0], 'department': v['sponsor'][1]}}
+    b = v['bank']
+    if sid == 'v12':
+        truth = [{'doc_id': 'd1', 'detected': 'tax_certificate', 'fields': {'legal_name': 'THAMES ANALYTICS LTD', 'tax_id': v['tax_id'], 'country': 'United Kingdom', 'address': f"{v['line']}, {v['city']} {v['pin']}"}},
+                 {'doc_id': 'd2', 'detected': 'bank_letter', 'fields': {'account_name': 'THAMES ANALYTICS LTD', 'account_number': b['account_number'], 'iban': b['iban'], 'swift': b['swift'], 'bank_name': b['bank_name']}}]
+    else:
+        truth = [{'doc_id': 'd1', 'detected': 'gst_certificate', 'fields': {'legal_name': 'ATLAS FREIGHT PVT LTD', 'trade_name': 'ATLAS FREIGHT PVT LTD', 'gstin': v['tax_id'], 'constitution': 'Private Limited Company', 'state': 'Maharashtra', 'address': 'Andheri East, Mumbai, Maharashtra 400069', 'registration_date': '2019-06-11'}},
+                 {'doc_id': 'd2', 'detected': 'bank_letter', 'fields': {'account_name': 'ATLAS FREIGHT PVT LTD', 'account_number': b['account_number'], 'ifsc': b['ifsc'], 'swift': b['swift'], 'bank_name': b['bank_name']}}]
+    t, scen, exp = SCEN[sid]
+    samples.append({'id': sid, 'type': t, 'scenario': scen, 'expect': exp, 'title': v['legal'],
+                    'email': {'from': f"{v['contact'][0]} <{v['contact'][1]}>", 'subject': EMAIL[sid][0], 'body': EMAIL[sid][1], 'received': f"2026-11-0{1 + int(sid[1:]) % 5}T{9 + int(sid[1:]) % 8:02d}:{(int(sid[1:]) * 7) % 60:02d}:00+05:30"},
+                    'submission': sub, 'docs': docs, 'truth': truth, '_v': dict(v, foreign=True)})
+
 # The fix Sundaram sends in round 2: an account in the company's own name.
 FIX_V02 = {'bank': {'account_name': 'Sundaram Packaging Solutions Pvt Ltd', 'account_number': '661205009871', 'ifsc': 'ICIC0000001', 'bank_name': 'ICICI Bank'},
            'doc': {'declared': 'cancelled_cheque', 'file': 'fix_cancelled_cheque.png', 'mime': 'image/png'}}
@@ -169,7 +231,7 @@ def specimen_pdf(c, w, h):
 
 
 def gst_pdf(path, v):
-    c = canvas.Canvas(path, pagesize=A4); w, h = A4
+    c = canvas.Canvas(path, pagesize=A4, invariant=1); w, h = A4
     c.setFont('Helvetica-Bold', 15); c.drawCentredString(w / 2, h - 70, 'GOODS AND SERVICES TAX')
     c.setFont('Helvetica', 11); c.drawCentredString(w / 2, h - 88, 'Registration Certificate (specimen, Form REG-06 layout)')
     c.setFont('Helvetica-Bold', 12); c.drawString(60, h - 130, f"Registration Number: {v['gstin']}")
@@ -187,7 +249,7 @@ def gst_pdf(path, v):
 
 
 def udyam_pdf(path, v):
-    c = canvas.Canvas(path, pagesize=A4); w, h = A4
+    c = canvas.Canvas(path, pagesize=A4, invariant=1); w, h = A4
     c.setFont('Helvetica-Bold', 15); c.drawCentredString(w / 2, h - 70, 'UDYAM REGISTRATION CERTIFICATE (specimen)')
     rows = [('Udyam Registration Number', v['udyam']), ('Name of Enterprise', v['legal'].upper()), ('Type of Enterprise', 'Micro'),
             ('Major Activity', 'Services' if v['cat'] == 'Services' else 'Manufacturing'), ('Address', f"{v['line']}, {v['city']} {v['pin']}"), ('Date of Udyam Registration', '2021-06-14')]
@@ -269,6 +331,19 @@ BRANCH = {'HDFC0000082': 'Chennai - Nungambakkam', 'ICIC0000001': 'Chennai Cenot
 for s in samples:
     v = s.pop('_v'); d = os.path.join(OUT, s['id']); os.makedirs(d, exist_ok=True)
     for f in os.listdir(d): os.remove(os.path.join(d, f))
+    if v.get('foreign'):
+        b = v['bank']
+        if s['id'] == 'v12':
+            letter_pdf(os.path.join(d, 'tax_certificate.pdf'), 'VAT registration certificate (specimen layout)', [('VAT registration number', v['tax_id'][2:5] + ' ' + v['tax_id'][5:9] + ' ' + v['tax_id'][9:]), ('Name', v['legal'].upper()), ('Trading address', f"{v['line']}, {v['city']} {v['pin']}"), ('Effective date of registration', '2018-04-01'), ('Country', 'United Kingdom')], 'HM Revenue & Customs (specimen)')
+            letter_pdf(os.path.join(d, 'bank_letter.pdf'), 'Bank account confirmation', [('Account name', v['legal'].upper()), ('Sort code', '20-00-00'), ('Account number', b['account_number']), ('IBAN', ' '.join(b['iban'][i:i+4] for i in range(0, len(b['iban']), 4))), ('SWIFT / BIC', b['swift']), ('Branch', 'Barclays, London Bridge')], 'Barclays Bank UK PLC (specimen)')
+        else:
+            gv = dict(gstin=v['tax_id'], legal='Atlas Freight Pvt Ltd', trade=None, constitution='Private Limited Company', line='Plot 12, MIDC, Andheri East', city='Mumbai', st='27', pin='400069', reg='2019-06-11')
+            gst_pdf(os.path.join(d, 'tax_certificate.pdf'), gv)
+            letter_pdf(os.path.join(d, 'bank_letter.pdf'), 'Bank account confirmation', [('Account name', 'ATLAS FREIGHT PVT LTD'), ('Account number', b['account_number']), ('IFSC', b['ifsc']), ('SWIFT / BIC', b['swift']), ('Branch', 'Mumbai, Sandoz House')], 'HDFC Bank (specimen)')
+            fb = FIX11['bank']
+            letter_pdf(os.path.join(d, 'fix_tax_certificate.pdf'), 'VAT registration certificate (specimen layout)', [('VAT registration number', vat11[2:5] + ' ' + vat11[5:9] + ' ' + vat11[9:]), ('Name', 'ATLAS FREIGHT LTD'), ('Trading address', f"{v['line']}, {v['city']} {v['pin']}"), ('Effective date of registration', '2021-02-01'), ('Country', 'United Kingdom')], 'HM Revenue & Customs (specimen)')
+            letter_pdf(os.path.join(d, 'fix_bank_letter.pdf'), 'Bank account confirmation', [('Account name', 'ATLAS FREIGHT LTD'), ('Sort code', '30-96-34'), ('Account number', fb['account_number']), ('IBAN', ' '.join(fb['iban'][i:i+4] for i in range(0, len(fb['iban']), 4))), ('SWIFT / BIC', fb['swift']), ('Branch', 'Lloyds, Canary Wharf')], 'Lloyds Bank plc (specimen)')
+        continue
     sc = bool(v.get('scanned'))
     holder = v.get('cheque_name') or (v.get('proprietor') or v['bank'][0]).upper()
     pan_name = v.get('proprietor') or v['legal'].upper()
@@ -288,9 +363,12 @@ for s in samples:
 
 FIXES = {'v02': {'bank': FIX_V02['bank'], 'file': 'fix_cancelled_cheque.png', 'holder': 'SUNDARAM PACKAGING SOLUTIONS PVT LTD'},
          'v06': {'bank': None, 'file': 'fix_cancelled_cheque.png', 'holder': V['v06']['bank'][0].upper()},
-         'v09': {'fields': {'business_type': 'Partnership'}}}
+         'v09': {'fields': {'business_type': 'Partnership'}},
+         'v11': {'bank': FIX11['bank'], 'fields': {'tax_id': FIX11['tax_id']}, 'files': [
+             {'kind': 'tax_certificate', 'file': 'fix_tax_certificate.pdf', 'fields': {'legal_name': 'ATLAS FREIGHT LTD', 'tax_id': FIX11['tax_id'], 'country': 'United Kingdom', 'address': 'Unit 4, Royal Docks Business Park, London E16 2PY'}},
+             {'kind': 'bank_letter', 'file': 'fix_bank_letter.pdf', 'fields': {'account_name': 'ATLAS FREIGHT LTD', 'account_number': FIX11['bank']['account_number'], 'iban': FIX11['bank']['iban'], 'swift': 'LOYDGB2L', 'bank_name': 'Lloyds Bank plc'}}]}}
 json.dump({'samples': samples, 'registry': REGISTRY, 'bank_records': BANK, 'fix_v02': FIX_V02, 'fixes': FIXES,
            'verity_vendors': [dict(zip(['id', 'name', 'gstin', 'pan', 'account_number', 'ifsc', 'bank_name', 'phone', 'email', 'address'], x)) for x in VERITY_VENDORS]},
           open(os.path.join(ROOT, 'src', 'data', 'samples.json'), 'w'), indent=1, ensure_ascii=False)
 print('built', len(samples), 'submissions')
-for s in samples: print(s['id'], s['expect'], s['submission']['gstin'], [x['file'] for x in s['docs']])
+for s in samples: print(s['id'], s['expect'], s['submission']['gstin'] or s['submission']['tax_id'], [x['file'] for x in s['docs']])

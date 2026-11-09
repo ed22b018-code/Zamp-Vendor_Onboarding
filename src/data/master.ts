@@ -53,7 +53,8 @@ export const CONSTITUTION: Record<string, BusinessType> = {
 export const FREE_EMAIL = ['gmail.com', 'yahoo.com', 'yahoo.co.in', 'outlook.com', 'hotmail.com', 'rediffmail.com', 'live.com', 'icloud.com', 'proton.me']
 export const DEPARTMENTS = ['Admin', 'IT', 'Facilities', 'Store Fit-outs', 'Warehouse', 'Marketing', 'Finance']
 
-export function requiredDocs(s: { msme: boolean }, st: Settings): { kind: DocKind | 'bank_proof'; label: string }[] {
+export function requiredDocs(s: { msme: boolean; country?: string }, st: Settings): { kind: DocKind | 'bank_proof'; label: string }[] {
+  if (s.country && s.country !== 'India') return [{ kind: 'tax_certificate', label: 'Tax registration certificate' }, { kind: 'bank_proof', label: 'Bank letter or cancelled cheque' }]
   const r: { kind: DocKind | 'bank_proof'; label: string }[] = [
     { kind: 'gst_certificate', label: 'GST registration certificate' }, { kind: 'pan_card', label: 'PAN card' }, { kind: 'bank_proof', label: 'Cancelled cheque or bank letter' },
   ]
@@ -71,6 +72,7 @@ export const DEFAULT_SETTINGS: Settings = {
   requireSponsor: false,
   sharedBankAction: 'reject',
   liveIfsc: true,
+  foreignNeedsReview: false,
   customRules: [],
   useCachedReadings: true,
 }

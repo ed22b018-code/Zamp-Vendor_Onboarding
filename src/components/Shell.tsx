@@ -1,4 +1,6 @@
 'use client'
+import { Guide } from './Guide'
+import { GUIDE } from '@/lib/guideContent'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { IChart, IDb, IHome, IInbox, IReview, ISliders, IUser } from './icons'
@@ -61,6 +63,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           </header>
           {children}
         </div>
+        <Guide cfg={GUIDE} />
         <nav className="tabbar">
           {NAV.slice(1).filter(n => !('external' in n)).map(n => (
             <Link key={n.href} href={n.href} className={on(n.href) ? 'on' : ''}>

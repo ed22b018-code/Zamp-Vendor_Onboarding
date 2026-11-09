@@ -1,17 +1,18 @@
 'use client'
+import { TAX_RULES } from '@/lib/taxid'
 import { useParams, useSearchParams } from 'next/navigation'
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { IArrow, ICheck, IInfo, ILoader, IX } from '@/components/icons'
 import { useToast } from '@/components/ui'
 import { BackToApp, sampleFile, Upload, useIfsc, VendorHeader } from '@/components/VendorBits'
 import type { Ask, DocKind } from '@/lib/types'
-import { BUSINESS_TYPES, DOC_LABEL } from '@/lib/types'
+import { BUSINESS_TYPES, DOC_LABEL, COUNTRIES } from '@/lib/types'
 
 type Pub = {
-  case_id: string; sample: string | null; demo_fix: { bank?: { account_name: string; account_number: string; ifsc: string; bank_name: string | null } | null; file?: string; fields?: Record<string, string> } | null
+  case_id: string; sample: string | null; demo_fix: { bank?: { account_name: string; account_number: string; ifsc: string; bank_name: string | null; swift?: string; iban?: string | null } | null; file?: string; fields?: Record<string, string>; files?: { kind: DocKind; file: string }[] } | null
   round: number; status: 'checking' | 'approved' | 'pending' | 'rejected'; waiting_on: 'vendor' | 'reviewer' | null; asks: Ask[]
   message: { subject: string; body: string } | null; vendor_id: string | null
-  vendor: { legal_name: string; trade_name: string | null; business_type: string; gstin: string; pan: string; bank_last4: string; ifsc: string; documents: { declared: DocKind; file_name: string }[] }
+  vendor: { country?: string; tax_id?: string | null; legal_name: string; trade_name: string | null; business_type: string; gstin: string; pan: string; bank_last4: string; ifsc: string; documents: { declared: DocKind; file_name: string }[] }
 }
 
 export default function FixPage() { return <Suspense><Fix /></Suspense> }
@@ -51,6 +52,7 @@ function Fix() {
   const fieldAsks = need.filter(a => a.kind === 'field') as Extract<Ask, { kind: 'field' }>[]
   const docAsks = need.filter(a => a.kind === 'document') as Extract<Ask, { kind: 'document' }>[]
   const confirmAsks = need.filter(a => a.kind === 'confirm')
+  const fx = !!c?.vendor.country && c.vendor.country !== 'India'
   const bankNeeded = fieldAsks.some(a => a.field === 'bank') || docAsks.some(a => a.doc === 'cancelled_cheque' && /account held in the name/i.test(a.text))
   const ifsc = useIfsc(fields.ifsc || '')
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setFields({ ...fields, [k]: e.target.value })
@@ -58,9 +60,10 @@ function Fix() {
   async function useSample() {
     const fx = c?.demo_fix; if (!fx || !c?.sample) return
     const next: Record<string, string> = { ...fields, ...(fx.fields || {}) }
-    if (fx.bank) Object.assign(next, { account_name: fx.bank.account_name, account_number: fx.bank.account_number, ifsc: fx.bank.ifsc, bank_name: fx.bank.bank_name || '' })
+    if (fx.bank) Object.assign(next, { account_name: fx.bank.account_name, account_number: fx.bank.account_number, ifsc: fx.bank.ifsc, bank_name: fx.bank.bank_name || '' }, fx.bank.swift ? { swift: fx.bank.swift, iban: fx.bank.iban || '' } : {})
     setFields(next)
     if (fx.file) { const f = await sampleFile(`/samples/${c.sample}/${fx.file}`, fx.file); setFiles({ ...files, cancelled_cheque: f }) }
+    if (fx.files?.length) { const got = await Promise.all(fx.files.map(x => sampleFile(`/samples/${c.sample}/${x.file}`, x.file))); setFiles({ ...files, ...Object.fromEntries(fx.files.map((x, i) => [x.kind, got[i]])) }) }
     toast('Filled with the sample correction')
   }
 
@@ -96,7 +99,7 @@ function Fix() {
       <div className="card" style={{ marginTop: 14 }}>
         <dl className="kv">
           <dt>Business</dt><dd>{c.vendor.legal_name}{c.vendor.trade_name ? ` (${c.vendor.trade_name})` : ''} · {c.vendor.business_type}</dd>
-          <dt>GSTIN · PAN</dt><dd className="mono">{c.vendor.gstin} · {c.vendor.pan}</dd>
+          {fx ? <dt>Country · Tax ID</dt> : <dt>GSTIN · PAN</dt>}{fx ? <dd>{c.vendor.country} · <span className="mono">{c.vendor.tax_id}</span></dd> : <dd className="mono">{c.vendor.gstin} · {c.vendor.pan}</dd>}
           <dt>Bank</dt><dd>Account ending {c.vendor.bank_last4} · <span className="mono">{c.vendor.ifsc}</span></dd>
           <dt>Documents</dt><dd>{c.vendor.documents.map(d => DOC_LABEL[d.declared]).join(', ')}</dd>
         </dl>
@@ -108,16 +111,26 @@ function Fix() {
           <ol className="steps" style={{ margin: 0, paddingLeft: 20 }}>{need.map((a, i) => <li key={i}>{a.text}</li>)}</ol>
           {fieldAsks.some(a => a.field === 'business_type') && <div className="field"><label>Business type</label><select className="input" value={fields.business_type || c.vendor.business_type} onChange={set('business_type')}>{BUSINESS_TYPES.map(b => <option key={b}>{b}</option>)}</select></div>}
           {fieldAsks.some(a => a.field === 'legal_name') && <div className="field"><label>Registered business name</label><input className="input" value={fields.legal_name ?? c.vendor.legal_name} onChange={set('legal_name')} /></div>}
+          {fieldAsks.some(a => a.field === 'tax_id') && <>
+            <div className="field"><label>Country of registration</label><select className="input" value={fields.country || c.vendor.country} onChange={set('country')}>{COUNTRIES.map(x => <option key={x}>{x}</option>)}</select></div>
+            {(fields.country || c.vendor.country) === 'India'
+              ? <><div className="field"><label>GSTIN</label><input className="input mono" value={fields.gstin || ''} onChange={set('gstin')} /></div><div className="field"><label>PAN</label><input className="input mono" value={fields.pan || ''} onChange={set('pan')} /></div></>
+              : <div className="field"><label>{TAX_RULES[(fields.country || c.vendor.country) as keyof typeof TAX_RULES].label}</label><input className="input mono" value={fields.tax_id ?? c.vendor.tax_id ?? ''} onChange={set('tax_id')} placeholder={`e.g. ${TAX_RULES[(fields.country || c.vendor.country) as keyof typeof TAX_RULES].example}`} /></div>}
+          </>}
           {fieldAsks.some(a => a.field === 'gstin') && <div className="field"><label>GSTIN</label><input className="input mono" value={fields.gstin ?? c.vendor.gstin} onChange={set('gstin')} /></div>}
           {fieldAsks.some(a => a.field === 'pan') && <div className="field"><label>PAN</label><input className="input mono" value={fields.pan ?? c.vendor.pan} onChange={set('pan')} /></div>}
           {fieldAsks.some(a => a.field === 'udyam') && <div className="field"><label>Udyam number</label><input className="input mono" value={fields.udyam || ''} onChange={set('udyam')} /></div>}
           {bankNeeded && <div className="vform2">
             <div className="field"><label>Account holder name</label><input className="input" value={fields.account_name || ''} onChange={set('account_name')} placeholder={c.vendor.legal_name} /></div>
             <div className="field"><label>Account number</label><input className="input mono" value={fields.account_number || ''} onChange={set('account_number')} /></div>
-            <div className="field"><label>IFSC</label><input className="input mono" value={fields.ifsc || ''} onChange={set('ifsc')} />{ifsc && <span className="tiny" style={{ color: ifsc.ok ? 'var(--green)' : 'var(--red)' }}>{ifsc.text}</span>}</div>
+            {fx ? <>
+              <div className="field"><label>SWIFT / BIC</label><input className="input mono" value={fields.swift || ''} onChange={set('swift')} /></div>
+              <div className="field"><label>IBAN</label><input className="input mono" value={fields.iban || ''} onChange={set('iban')} /></div>
+            </> : <div className="field"><label>IFSC</label><input className="input mono" value={fields.ifsc || ''} onChange={set('ifsc')} />{ifsc && <span className="tiny" style={{ color: ifsc.ok ? 'var(--green)' : 'var(--red)' }}>{ifsc.text}</span>}</div>}
             <div className="field"><label>Bank</label><input className="input" value={fields.bank_name || ''} onChange={set('bank_name')} /></div>
           </div>}
-          {[...new Set(docAsks.map(a => a.doc))].map(k => <Upload key={k} label={DOC_LABEL[k]} hint={k === 'cancelled_cheque' ? 'Cancelled cheque or a bank letter for the account above' : undefined} file={files[k] || null} onFile={x => setFiles({ ...files, [k]: x })} />)}
+          {fx && bankNeeded && !docAsks.some(a => a.doc === 'bank_letter') && <Upload label="Bank letter" hint="For the new account, showing SWIFT and IBAN" file={files.bank_letter || null} onFile={x => setFiles({ ...files, bank_letter: x })} />}
+          {[...new Set(docAsks.map(a => a.doc))].map(k => <Upload key={k} label={DOC_LABEL[k]} hint={k === 'cancelled_cheque' ? 'Cancelled cheque or a bank letter for the account above' : k === 'bank_letter' ? 'Bank letter for the account above, with SWIFT and IBAN' : undefined} file={files[k] || null} onFile={x => setFiles({ ...files, [k]: x })} />)}
           {confirmAsks.length > 0 && <div className="field"><label>Your reply</label><textarea className="input" value={reply} onChange={e => setReply(e.target.value)} placeholder="Type your answer here" /><Upload label="Attach a document (optional)" file={files.other || null} onFile={x => setFiles({ ...files, other: x })} /></div>}
           <div className="row wrap" style={{ gap: 10 }}>
             <button className="btn lg blue" disabled={busy} onClick={resubmit}>{busy ? 'Sending…' : 'Resubmit'} <IArrow /></button>

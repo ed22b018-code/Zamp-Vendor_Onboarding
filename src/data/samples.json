@@ -13,6 +13,8 @@
     "received": "2026-11-02T10:07:00+05:30"
    },
    "submission": {
+    "country": "India",
+    "tax_id": null,
     "legal_name": "Brightline Facility Services Pvt Ltd",
     "trade_name": null,
     "business_type": "Private Limited",
@@ -125,6 +127,8 @@
     "received": "2026-11-03T11:14:00+05:30"
    },
    "submission": {
+    "country": "India",
+    "tax_id": null,
     "legal_name": "Sundaram Packaging Solutions Pvt Ltd",
     "trade_name": null,
     "business_type": "Private Limited",
@@ -223,6 +227,8 @@
     "received": "2026-11-04T12:21:00+05:30"
    },
    "submission": {
+    "country": "India",
+    "tax_id": null,
     "legal_name": "Apex Office Systems Pvt Ltd",
     "trade_name": null,
     "business_type": "Private Limited",
@@ -321,6 +327,8 @@
     "received": "2026-11-05T13:28:00+05:30"
    },
    "submission": {
+    "country": "India",
+    "tax_id": null,
     "legal_name": "Velan Electrical Contractors",
     "trade_name": null,
     "business_type": "Partnership",
@@ -433,6 +441,8 @@
     "received": "2026-11-01T14:35:00+05:30"
    },
    "submission": {
+    "country": "India",
+    "tax_id": null,
     "legal_name": "Shree Kaveri Traders",
     "trade_name": null,
     "business_type": "Proprietorship",
@@ -531,6 +541,8 @@
     "received": "2026-11-02T15:42:00+05:30"
    },
    "submission": {
+    "country": "India",
+    "tax_id": null,
     "legal_name": "Nilgiri IT Services Pvt Ltd",
     "trade_name": null,
     "business_type": "Private Limited",
@@ -627,6 +639,8 @@
     "received": "2026-11-03T16:49:00+05:30"
    },
    "submission": {
+    "country": "India",
+    "tax_id": null,
     "legal_name": "Lakshmi Narayan Enterprises Pvt Ltd",
     "trade_name": "LNE Office Interiors",
     "business_type": "Private Limited",
@@ -725,6 +739,8 @@
     "received": "2026-11-04T09:56:00+05:30"
    },
    "submission": {
+    "country": "India",
+    "tax_id": null,
     "legal_name": "R Murugan",
     "trade_name": "Murugan Electricals",
     "business_type": "Proprietorship",
@@ -837,6 +853,8 @@
     "received": "2026-11-05T10:03:00+05:30"
    },
    "submission": {
+    "country": "India",
+    "tax_id": null,
     "legal_name": "Coromandel Logistics",
     "trade_name": null,
     "business_type": "Private Limited",
@@ -935,6 +953,8 @@
     "received": "2026-11-01T11:10:00+05:30"
    },
    "submission": {
+    "country": "India",
+    "tax_id": null,
     "legal_name": "Swift Supply Co",
     "trade_name": null,
     "business_type": "Proprietorship",
@@ -1013,6 +1033,179 @@
       "account_number": "20881200345",
       "ifsc": "SBIN0000800",
       "bank_name": "State Bank of India"
+     }
+    }
+   ]
+  },
+  {
+   "id": "v11",
+   "type": "Edge case",
+   "scenario": "Claims to be a UK company, but its tax ID is an Indian GSTIN and its bank is in India",
+   "expect": "pending",
+   "title": "Atlas Freight Ltd",
+   "email": {
+    "from": "Rahul Mehta <rahul@atlasfreight.co.uk>",
+    "subject": "Atlas Freight: UK vendor registration",
+    "body": "Hello, we are a UK freight forwarder. Please register us for your import shipments. VAT details and bank letter attached.",
+    "received": "2026-11-02T12:17:00+05:30"
+   },
+   "submission": {
+    "country": "United Kingdom",
+    "tax_id": "27AAJCA4410P1ZG",
+    "legal_name": "Atlas Freight Ltd",
+    "trade_name": null,
+    "business_type": "Private Limited",
+    "gstin": "",
+    "pan": "",
+    "address": {
+     "line": "Unit 4, Royal Docks Business Park",
+     "city": "London",
+     "state": "England",
+     "pin": "E16 2PY"
+    },
+    "contact": {
+     "name": "Rahul Mehta",
+     "email": "rahul@atlasfreight.co.uk",
+     "phone": "+44 20 3051 4410"
+    },
+    "bank": {
+     "account_name": "Atlas Freight Pvt Ltd",
+     "account_number": "50200077441100",
+     "ifsc": "HDFC0000240",
+     "bank_name": "HDFC Bank",
+     "swift": "HDFCINBB",
+     "iban": null
+    },
+    "category": "Services",
+    "msme": false,
+    "udyam": null,
+    "sponsor": {
+     "name": "Ravi K.",
+     "department": "Warehouse"
+    }
+   },
+   "docs": [
+    {
+     "id": "d1",
+     "declared": "tax_certificate",
+     "file": "tax_certificate.pdf",
+     "mime": "application/pdf"
+    },
+    {
+     "id": "d2",
+     "declared": "bank_letter",
+     "file": "bank_letter.pdf",
+     "mime": "application/pdf"
+    }
+   ],
+   "truth": [
+    {
+     "doc_id": "d1",
+     "detected": "gst_certificate",
+     "fields": {
+      "legal_name": "ATLAS FREIGHT PVT LTD",
+      "trade_name": "ATLAS FREIGHT PVT LTD",
+      "gstin": "27AAJCA4410P1ZG",
+      "constitution": "Private Limited Company",
+      "state": "Maharashtra",
+      "address": "Andheri East, Mumbai, Maharashtra 400069",
+      "registration_date": "2019-06-11"
+     }
+    },
+    {
+     "doc_id": "d2",
+     "detected": "bank_letter",
+     "fields": {
+      "account_name": "ATLAS FREIGHT PVT LTD",
+      "account_number": "50200077441100",
+      "ifsc": "HDFC0000240",
+      "swift": "HDFCINBB",
+      "bank_name": "HDFC Bank"
+     }
+    }
+   ]
+  },
+  {
+   "id": "v12",
+   "type": "Approved, with a twist",
+   "scenario": "Genuine UK vendor: valid VAT number and IBAN; withholding-tax paperwork noted for the first payment",
+   "expect": "approved",
+   "title": "Thames Analytics Ltd",
+   "email": {
+    "from": "Olivia Hart <billing@thamesanalytics.co.uk>",
+    "subject": "Thames Analytics: supplier onboarding",
+    "body": "Dear Northwind team, please find our VAT registration certificate and bank letter for the analytics subscription.",
+    "received": "2026-11-03T13:24:00+05:30"
+   },
+   "submission": {
+    "country": "United Kingdom",
+    "tax_id": "GB293615244",
+    "legal_name": "Thames Analytics Ltd",
+    "trade_name": null,
+    "business_type": "Private Limited",
+    "gstin": "",
+    "pan": "",
+    "address": {
+     "line": "3rd Floor, 21 Southwark Street",
+     "city": "London",
+     "state": "England",
+     "pin": "SE1 1RQ"
+    },
+    "contact": {
+     "name": "Olivia Hart",
+     "email": "billing@thamesanalytics.co.uk",
+     "phone": "+44 20 7946 0213"
+    },
+    "bank": {
+     "account_name": "Thames Analytics Ltd",
+     "account_number": "41708823",
+     "ifsc": "",
+     "bank_name": "Barclays Bank UK PLC",
+     "swift": "BARCGB22",
+     "iban": "GB21BARC20000041708823"
+    },
+    "category": "Services",
+    "msme": false,
+    "udyam": null,
+    "sponsor": {
+     "name": "Karthik S.",
+     "department": "IT"
+    }
+   },
+   "docs": [
+    {
+     "id": "d1",
+     "declared": "tax_certificate",
+     "file": "tax_certificate.pdf",
+     "mime": "application/pdf"
+    },
+    {
+     "id": "d2",
+     "declared": "bank_letter",
+     "file": "bank_letter.pdf",
+     "mime": "application/pdf"
+    }
+   ],
+   "truth": [
+    {
+     "doc_id": "d1",
+     "detected": "tax_certificate",
+     "fields": {
+      "legal_name": "THAMES ANALYTICS LTD",
+      "tax_id": "GB293615244",
+      "country": "United Kingdom",
+      "address": "3rd Floor, 21 Southwark Street, London SE1 1RQ"
+     }
+    },
+    {
+     "doc_id": "d2",
+     "detected": "bank_letter",
+     "fields": {
+      "account_name": "THAMES ANALYTICS LTD",
+      "account_number": "41708823",
+      "iban": "GB21BARC20000041708823",
+      "swift": "BARCGB22",
+      "bank_name": "Barclays Bank UK PLC"
      }
     }
    ]
@@ -1118,6 +1311,16 @@
    "cancellation_date": null,
    "state": "Tamil Nadu",
    "principal_place": "Shop 4, 2nd Floor, Ritchie Street, Chennai 600002"
+  },
+  "27AAJCA4410P1ZG": {
+   "legal_name": "ATLAS FREIGHT PVT LTD",
+   "trade_name": "ATLAS FREIGHT PVT LTD",
+   "constitution": "Private Limited Company",
+   "status": "Active",
+   "registration_date": "2019-06-11",
+   "cancellation_date": null,
+   "state": "Maharashtra",
+   "principal_place": "Andheri East, Mumbai 400069"
   }
  },
  "bank_records": {
@@ -1196,6 +1399,16 @@
    "ifsc": "SBIN0000800",
    "status": "Active"
   },
+  "GB21BARC20000041708823": {
+   "holder": "THAMES ANALYTICS LTD",
+   "ifsc": "BARCGB22",
+   "status": "Active"
+  },
+  "GB30LOYD30963411447723": {
+   "holder": "ATLAS FREIGHT LTD",
+   "ifsc": "LOYDGB2L",
+   "status": "Active"
+  },
   "661205009871": {
    "holder": "SUNDARAM PACKAGING SOLUTIONS PRIVATE LIMITED",
    "ifsc": "ICIC0000001",
@@ -1235,6 +1448,42 @@
    "fields": {
     "business_type": "Partnership"
    }
+  },
+  "v11": {
+   "bank": {
+    "account_name": "Atlas Freight Ltd",
+    "account_number": "11447723",
+    "ifsc": "",
+    "bank_name": "Lloyds Bank plc",
+    "swift": "LOYDGB2L",
+    "iban": "GB30LOYD30963411447723"
+   },
+   "fields": {
+    "tax_id": "GB441820766"
+   },
+   "files": [
+    {
+     "kind": "tax_certificate",
+     "file": "fix_tax_certificate.pdf",
+     "fields": {
+      "legal_name": "ATLAS FREIGHT LTD",
+      "tax_id": "GB441820766",
+      "country": "United Kingdom",
+      "address": "Unit 4, Royal Docks Business Park, London E16 2PY"
+     }
+    },
+    {
+     "kind": "bank_letter",
+     "file": "fix_bank_letter.pdf",
+     "fields": {
+      "account_name": "ATLAS FREIGHT LTD",
+      "account_number": "11447723",
+      "iban": "GB30LOYD30963411447723",
+      "swift": "LOYDGB2L",
+      "bank_name": "Lloyds Bank plc"
+     }
+    }
+   ]
   }
  },
  "verity_vendors": [

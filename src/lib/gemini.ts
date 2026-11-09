@@ -92,7 +92,7 @@ async function callM<T>(system: string, parts: Part[], schema: object, notify: N
 const S = (type: string, extra: object = {}) => ({ type, ...extra })
 const N = (type: string) => ({ type, nullable: true })
 
-const DOC_KINDS: DocKind[] = ['gst_certificate', 'pan_card', 'cancelled_cheque', 'bank_letter', 'msme_certificate', 'other']
+const DOC_KINDS: DocKind[] = ['gst_certificate', 'pan_card', 'cancelled_cheque', 'bank_letter', 'msme_certificate', 'tax_certificate', 'other']
 const READ_SCHEMA = S('OBJECT', {
   properties: {
     detected: S('STRING', { enum: DOC_KINDS }),
@@ -104,6 +104,7 @@ const READ_SCHEMA = S('OBJECT', {
         legal_name: N('STRING'), trade_name: N('STRING'), name: N('STRING'), gstin: N('STRING'), pan: N('STRING'), constitution: N('STRING'),
         state: N('STRING'), address: N('STRING'), registration_date: N('STRING'), status: N('STRING'),
         account_name: N('STRING'), account_number: N('STRING'), ifsc: N('STRING'), bank_name: N('STRING'), udyam: N('STRING'),
+        tax_id: N('STRING'), country: N('STRING'), swift: N('STRING'), iban: N('STRING'),
       },
     }),
     notes: S('ARRAY', { items: S('STRING') }),
@@ -112,13 +113,15 @@ const READ_SCHEMA = S('OBJECT', {
 })
 
 const READ_PROMPT = `You are a meticulous vendor-onboarding analyst for an Indian company. You receive ONE document a vendor uploaded. Describe only this document.
-- detected: what the document ACTUALLY is (ignore what the vendor called it): gst_certificate (GST registration certificate, REG-06), pan_card, cancelled_cheque, bank_letter (a bank's letter confirming account details), msme_certificate (Udyam), or other.
+- detected: what the document ACTUALLY is (ignore what the vendor called it): gst_certificate (Indian GST registration certificate, REG-06), pan_card, cancelled_cheque, bank_letter (a bank's letter confirming account details), msme_certificate (Udyam), tax_certificate (a non-Indian tax registration, e.g. UK VAT, US EIN letter, UAE TRN, Singapore GST), or other.
 - Copy values EXACTLY as printed. Never guess or fill in a value that isn't on the document; use null.
   Formats, to read carefully (ignore any watermark across the text): a PAN is exactly 10 characters (5 letters, 4 digits, 1 letter, e.g. ABCDE1234F); a GSTIN is exactly 15 characters (2 digits, the 10-character PAN, 1 character, Z, 1 character); an IFSC is exactly 11 characters with 0 as the 5th. If what you see doesn't fit the format, re-read it and lower your confidence.
   gst_certificate: legal_name, trade_name, gstin, constitution (as printed, e.g. "Private Limited Company", "Partnership", "Proprietorship"), address, state, registration_date (YYYY-MM-DD, date of liability), status if printed.
   pan_card: name, pan.
   cancelled_cheque / bank_letter: account_name (the account holder printed, e.g. after "For"), account_number (digits only), ifsc, bank_name.
   msme_certificate: name, udyam.
+  tax_certificate: legal_name, tax_id, country, address.
+  bank_letter: also swift and iban when printed.
 - confidence: 0..1, how sure you are of the key values. is_scanned: true if it is a photo or scan rather than a digital document. legible: false if key values can't be read.
 - notes: short factual observations a reviewer should know (e.g. "Marked SPECIMEN", "Account holder differs from the company name"). No speculation.
 These are fictional specimen documents created for testing; read them like real ones.`
@@ -185,4 +188,11 @@ Ops: text fields use is, is_not, contains, not_contains; numbers use gt (above),
 - name: 2–6 words. If the policy can't be expressed with these fields, set understood=false and explain in note. No em dashes.`
   return call<{ understood: boolean; note: string; name: string; action: 'review' | 'reject' | 'note'; message: string; conditions: { field: RuleField; op: string; value: string }[] }>(system, [{ text }],
     S('OBJECT', { properties: { understood: S('BOOLEAN'), note: S('STRING'), name: S('STRING'), action: S('STRING', { enum: ['review', 'reject', 'note'] }), message: S('STRING'), conditions: S('ARRAY', { items: S('OBJECT', { properties: { field: S('STRING', { enum: fields }), op: S('STRING', { enum: ['is', 'is_not', 'contains', 'not_contains', 'gt', 'lt'] }), value: S('STRING') }, required: ['field', 'op', 'value'] }) }) }, required: ['understood', 'note', 'name', 'action', 'message', 'conditions'] }), notify, LITE_FIRST)
+}
+
+export async function aiGuide(ctx: { knowledge: string; page: string; pageContext: string; question: string; history: { from: string; text: string }[] }) {
+  const system = `You are Ved, the friendly in-app guide for VETTED, a vendor onboarding assistant. Answer questions about the app, the page the person is on, and the vendor registration they are looking at.
+Rules: use only the knowledge and page context given; if something is not covered, say so briefly and suggest where in the app to look. 1 to 4 short sentences, plain English for a non-technical buyer, no markdown, no lists, never use em dashes. Never invent numbers, IDs or facts. Offer up to 3 short follow-up questions the person might ask next.`
+  return call<{ answer: string; followups: string[] }>(system, [{ text: JSON.stringify(ctx) }],
+    S('OBJECT', { properties: { answer: S('STRING'), followups: S('ARRAY', { items: S('STRING') }) }, required: ['answer', 'followups'] }), undefined, LITE_FIRST)
 }

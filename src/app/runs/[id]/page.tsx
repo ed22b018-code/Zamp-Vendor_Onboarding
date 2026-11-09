@@ -12,7 +12,7 @@ import { fmtDateTime } from '@/lib/util'
 
 const PLAIN: Record<string, string> = {
   intake: 'Take in the form and documents, fingerprint each file', complete: 'Required fields and documents for this business type', read: 'Gemini reads every document and checks it is what it claims to be',
-  format: 'GSTIN check digit, PAN, IFSC, PIN code, email domain', cross: 'Form vs documents: names, PAN inside GSTIN, state, business type', verify: 'GST registry, IFSC directory, bank account holder',
+  format: 'GSTIN check digit, PAN, IFSC (or foreign tax ID, SWIFT, IBAN), PIN, email', cross: 'Form vs documents: names, PAN inside GSTIN, state, business type', verify: 'GST registry, IFSC directory, bank account holder',
   fraud: 'Bank account or GSTIN already used, blocklist, shared contacts', decide: 'Apply onboarding policy to every finding, score the risk', explain: 'Reasoning for the reviewer and an exact ask for the vendor', record: 'Vendor master on approval, case timeline, audit trail',
 }
 const SEV: Record<Severity, { cls: string; label: string }> = { reject: { cls: 'reject', label: 'Reject' }, vendor: { cls: 'hold', label: 'Vendor must fix' }, review: { cls: 'review', label: 'Reviewer decides' }, info: { cls: 'info', label: 'Note' } }
@@ -91,7 +91,7 @@ export default function RunPage() {
             {run.source === 'portal' && <span className="pill">Vendor portal</span>}
           </div>
           <h1 className="ellipsis">{sub.trade_name || sub.legal_name}</h1>
-          <p>{sub.trade_name ? `${sub.legal_name} · ` : ''}{sub.business_type} · {sub.address.city}, {sub.address.state} · <span className="mono">{sub.gstin}</span></p>
+          <p>{sub.trade_name ? `${sub.legal_name} · ` : ''}{sub.business_type} · {sub.address.city}, {sub.address.state} · <span className="mono">{sub.country && sub.country !== 'India' ? `${sub.country} · ${sub.tax_id}` : sub.gstin}</span></p>
         </div>
       </div>
 
@@ -235,6 +235,27 @@ function Compare({ run }: { run: Run }) {
   const bad = (a?: string | null, b?: string | null) => !!a && !!b && a.replace(/\W/g, '').toUpperCase() !== b.replace(/\W/g, '').toUpperCase()
   const cell = (v: string | null | undefined, ref?: string | null, soft = false) => v ? <span className={bad(v, ref) && !soft ? 'mism' : ''}>{v}</span> : <span className="faint">–</span>
   if (!run.reading) return <div className="empty small">{run.status === 'done' ? 'No documents were read.' : 'Gemini is reading the documents…'}</div>
+  if (sub.country && sub.country !== 'India') {
+    const cert = (by('tax_certificate') || by('gst_certificate'))?.fields, bl = (by('bank_letter') || by('cancelled_cheque'))?.fields
+    const frows: [string, React.ReactNode, React.ReactNode, React.ReactNode][] = [
+      ['Country', sub.country, cell(cert?.country, sub.country, true), cell(bl?.country, sub.country, true)],
+      ['Legal name', sub.legal_name, cell(cert?.legal_name, sub.legal_name, true), cell(bl?.account_name, sub.legal_name, true)],
+      ['Tax ID', <span key="t" className="mono">{sub.tax_id}</span>, <span key="tc" className="mono">{cell(cert?.tax_id || cert?.gstin, sub.tax_id)}</span>, <span key="tb" className="faint">–</span>],
+      ['SWIFT', <span key="s" className="mono">{sub.bank.swift || '–'}</span>, <span key="sc" className="faint">–</span>, <span key="sb" className="mono">{cell(bl?.swift || bl?.ifsc, sub.bank.swift)}</span>],
+      ['IBAN / account', <span key="i" className="mono">{sub.bank.iban || `••${sub.bank.account_number.slice(-4)}`}</span>, <span key="ic" className="faint">–</span>, <span key="ib" className="mono">{cell(bl?.iban || (bl?.account_number ? `••${bl.account_number.slice(-4)}` : null), sub.bank.iban || `••${sub.bank.account_number.slice(-4)}`)}</span>],
+    ]
+    return (
+      <div>
+        <div className="scroll-x"><table className="t cmp">
+          <thead><tr><th></th><th>Form</th><th>Tax certificate</th><th>Bank letter</th></tr></thead>
+          <tbody>{frows.map(([k, a, b, c]) => <tr key={k}><td className="muted">{k}</td><td>{a}</td><td>{b}</td><td>{c}</td></tr>)}</tbody>
+        </table></div>
+        {ver && ver.status !== 'pending' && <dl className="kv" style={{ borderTop: '1px solid var(--line)' }}>
+          {ver.checks.map(c => <div key={c.label} style={{ display: 'contents' }}><dt>{c.label}</dt><dd><span className={`ckdot ${c.status}`} />{c.detail}</dd></div>)}
+        </dl>}
+      </div>
+    )
+  }
   const rows: [string, React.ReactNode, React.ReactNode, React.ReactNode][] = [
     ['Legal name', sub.legal_name, cell(gst?.legal_name, sub.legal_name, true), cell(pan?.name, sub.legal_name, true)],
     ['GSTIN', <span key="g" className="mono">{sub.gstin}</span>, <span key="gg" className="mono">{cell(gst?.gstin, sub.gstin)}</span>, <span key="gp" className="mono faint">PAN inside: {sub.gstin.slice(2, 12)}</span>],

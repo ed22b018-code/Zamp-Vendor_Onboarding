@@ -2,26 +2,29 @@
 import 'server-only'
 import { sha256 } from './engine'
 import type { Store } from './store'
-import type { BusinessType, DocKind, Submission, SubmissionDoc } from './types'
-import { BUSINESS_TYPES } from './types'
+import type { BusinessType, Country, DocKind, Submission, SubmissionDoc } from './types'
+import { BUSINESS_TYPES, COUNTRIES } from './types'
 import { uid } from './util'
 import { FIXES } from './samples'
 
 export const MAX_TOTAL = 4 * 1024 * 1024
 const OK_MIME = ['application/pdf', 'image/png', 'image/jpeg', 'image/webp']
-const KINDS: DocKind[] = ['gst_certificate', 'pan_card', 'cancelled_cheque', 'bank_letter', 'msme_certificate', 'other']
+const KINDS: DocKind[] = ['gst_certificate', 'pan_card', 'cancelled_cheque', 'bank_letter', 'msme_certificate', 'tax_certificate', 'other']
 const c = (x: unknown, n = 120) => String(x ?? '').replace(/\s+/g, ' ').trim().slice(0, n)
 
 export function cleanFields(b: Record<string, unknown>, base?: Submission): Omit<Submission, 'documents'> {
   const g = (k: string, fallback: string) => (k in b ? c(b[k]) : fallback)
   const bt = c(b.business_type) as BusinessType
+  const ct = c(b.country) as Country
+  const country: Country = COUNTRIES.includes(ct) ? ct : base?.country || 'India'
   return {
+    country, tax_id: ('tax_id' in b ? c(b.tax_id, 40) : base?.tax_id || '') || null,
     legal_name: g('legal_name', base?.legal_name || ''), trade_name: ('trade_name' in b ? c(b.trade_name) : base?.trade_name || '') || null,
     business_type: BUSINESS_TYPES.includes(bt) ? bt : base?.business_type || 'Private Limited',
     gstin: g('gstin', base?.gstin || '').toUpperCase().replace(/\s/g, ''), pan: g('pan', base?.pan || '').toUpperCase().replace(/\s/g, ''),
     address: { line: g('address_line', base?.address.line || ''), city: g('city', base?.address.city || ''), state: g('state', base?.address.state || ''), pin: g('pin', base?.address.pin || '').replace(/\s/g, '') },
     contact: { name: g('contact_name', base?.contact.name || ''), email: g('email', base?.contact.email || '').toLowerCase(), phone: g('phone', base?.contact.phone || '') },
-    bank: { account_name: g('account_name', base?.bank.account_name || ''), account_number: g('account_number', base?.bank.account_number || '').replace(/[\s-]/g, ''), ifsc: g('ifsc', base?.bank.ifsc || '').toUpperCase(), bank_name: g('bank_name', base?.bank.bank_name || '') || null },
+    bank: { account_name: g('account_name', base?.bank.account_name || ''), account_number: g('account_number', base?.bank.account_number || '').replace(/[\s-]/g, ''), ifsc: g('ifsc', base?.bank.ifsc || '').toUpperCase(), bank_name: g('bank_name', base?.bank.bank_name || '') || null, swift: g('swift', base?.bank.swift || '').toUpperCase() || null, iban: g('iban', base?.bank.iban || '').toUpperCase().replace(/\s/g, '') || null },
     category: (c(b.category) || base?.category) === 'Services' ? 'Services' : 'Goods',
     msme: 'msme' in b ? b.msme === true || b.msme === 'true' || b.msme === 'yes' : !!base?.msme,
     udyam: ('udyam' in b ? c(b.udyam).toUpperCase() : base?.udyam || '') || null,
@@ -57,6 +60,6 @@ export function publicCase(run: { sample_id: string | null; case_id: string; rou
     asks: run.status === 'done' && final === 'pending' && run.outcome?.waiting_on === 'vendor' ? run.outcome.asks : [],
     message: run.status === 'done' ? run.outcome?.vendor_email ?? null : null,
     vendor_id: run.outcome?.vendor_id ?? null,
-    vendor: { legal_name: run.submission.legal_name, trade_name: run.submission.trade_name, business_type: run.submission.business_type, gstin: run.submission.gstin, pan: run.submission.pan, bank_last4: run.submission.bank.account_number.slice(-4), ifsc: run.submission.bank.ifsc, documents: run.submission.documents.map(d => ({ declared: d.declared, file_name: d.file_name })) },
+    vendor: { country: run.submission.country || 'India', tax_id: run.submission.tax_id, legal_name: run.submission.legal_name, trade_name: run.submission.trade_name, business_type: run.submission.business_type, gstin: run.submission.gstin, pan: run.submission.pan, bank_last4: (run.submission.bank.iban || run.submission.bank.account_number).slice(-4), ifsc: run.submission.bank.swift || run.submission.bank.ifsc, documents: run.submission.documents.map(d => ({ declared: d.declared, file_name: d.file_name })) },
   }
 }

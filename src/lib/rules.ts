@@ -4,6 +4,7 @@ import { DEPARTMENTS } from '@/data/master'
 
 export const RULE_FIELDS: { key: RuleField; label: string; kind: 'text' | 'number' | 'choice'; choices?: string[]; hint: string }[] = [
   { key: 'legal_name', label: 'Vendor name', kind: 'text', hint: 'e.g. Traders' },
+  { key: 'country', label: 'Country', kind: 'choice', choices: ['India', 'United States', 'United Kingdom', 'United Arab Emirates', 'Singapore'], hint: '' },
   { key: 'business_type', label: 'Business type', kind: 'choice', choices: ['Private Limited', 'Public Limited', 'LLP', 'Partnership', 'Proprietorship'], hint: '' },
   { key: 'state', label: 'State', kind: 'text', hint: 'e.g. Tamil Nadu' },
   { key: 'category', label: 'Supplies', kind: 'choice', choices: ['Goods', 'Services'], hint: '' },

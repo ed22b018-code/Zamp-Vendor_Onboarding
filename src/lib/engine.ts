@@ -7,17 +7,18 @@ import path from 'path'
 import { BANK_RECORDS, BLOCKLIST, BUYER, CONSTITUTION, FREE_EMAIL, IFSC_SNAPSHOT, PAN_ENTITY, REGISTRY, requiredDocs, VENDORS } from '@/data/master'
 import { AIError, aiConfigured, aiExplain, aiReadDoc, aiSameEntity } from './gemini'
 import { ruleSentence } from './rules'
-import { cachedByFile, sampleById } from './samples'
+import { cachedByFile, FIXES, sampleById, SAMPLES } from './samples'
 import type { Store } from './store'
 import type { Ask, CustomRule, FixField, Decision, DocKind, DocReading, Finding, Outcome, Run, Settings, Stage, StageKey, StreamEvent, Submission, SubmissionDoc, Vendor } from './types'
 import { DOC_LABEL } from './types'
+import { ibanCheck, ibanRequired, ISO, looksLike, SWIFT_RE, TAX_RULES, withArticle } from './taxid'
 import { daysBetween, gstinChecksumOk, GSTIN_RE, IFSC_RE, last4, normCompany, PAN_RE, PIN_RE, PIN_STATE, similarity, sleep, STATES, uid } from './util'
 
 export const STAGE_DEFS: { key: StageKey; title: string; by: Stage['by']; plain: string }[] = [
   { key: 'intake', title: 'Receive submission', by: 'code', plain: 'Take in the form and documents, fingerprint each file' },
   { key: 'complete', title: 'Completeness', by: 'code', plain: 'Every required field and document for this business type' },
   { key: 'read', title: 'Read documents', by: 'ai', plain: 'Gemini reads GST certificate, PAN, cheque (even scans) and checks each is what it claims' },
-  { key: 'format', title: 'Format checks', by: 'code', plain: 'GSTIN check digit, PAN, IFSC, PIN code, email domain' },
+  { key: 'format', title: 'Format checks', by: 'code', plain: 'GSTIN check digit, PAN, IFSC, PIN, email (foreign: tax ID, SWIFT, IBAN)' },
   { key: 'cross', title: 'Cross-check', by: 'ai+code', plain: 'Form vs documents: names, PAN inside GSTIN, state, business type' },
   { key: 'verify', title: 'Verify externally', by: 'code', plain: 'GST registry status, IFSC directory, bank account holder (penny drop)' },
   { key: 'fraud', title: 'Fraud & duplicates', by: 'code', plain: 'Bank account or GSTIN already used, blocklist, shared contacts' },
@@ -30,6 +31,17 @@ export const sha256 = (b: Buffer | string) => createHash('sha256').update(b).dig
 const DAY = (d = new Date()) => d.toISOString().slice(0, 10)
 
 // ---------------- files ----------------
+let SAMPLE_INDEX: Map<string, { id: string; file: string }> | null = null
+/** Every sample document (including the demo corrections) by SHA-256. */
+function sampleIndex() {
+  if (SAMPLE_INDEX) return SAMPLE_INDEX
+  const m = new Map<string, { id: string; file: string }>()
+  for (const s of SAMPLES) {
+    const fx = FIXES[s.id]
+    for (const file of [...s.docs.map(d => d.file), ...(fx?.file ? [fx.file] : []), ...(fx?.files || []).map(x => x.file)]) { const b = sampleFile(s.id, file); if (b) m.set(sha256(b), { id: s.id, file }) }
+  }
+  return (SAMPLE_INDEX = m)
+}
 export function sampleFile(sampleId: string, file: string): Buffer | null {
   if (!/^v\d\d$/.test(sampleId) || !/^[a-z_]+\.(pdf|png|jpg)$/.test(file)) return null
   try { return readFileSync(path.join(process.cwd(), 'public', 'samples', sampleId, file)) } catch { return null }
@@ -122,7 +134,10 @@ async function intake(ctx: Ctx, s: Stage) {
 // ---------------- 2. completeness ----------------
 function completeness(ctx: Ctx, s: Stage) {
   const { sub, settings } = ctx
-  const fields: [string, unknown, FixField | null][] = [
+  const fields: [string, unknown, FixField | null][] = isForeign(sub) ? [
+    ['Legal name', sub.legal_name, 'legal_name'], [`${TAX_RULES[sub.country].label}`, sub.tax_id, 'tax_id'], ['Address', sub.address?.line, 'address'],
+    ['Contact email', sub.contact?.email, 'email'], ['Bank account and SWIFT code', (sub.bank?.iban || sub.bank?.account_number) && sub.bank?.swift, 'bank'],
+  ] : [
     ['Legal name', sub.legal_name, 'legal_name'], ['GSTIN', sub.gstin, 'gstin'], ['PAN', sub.pan, 'pan'], ['Address and PIN', sub.address?.line && sub.address?.pin, 'address'],
     ['Contact email', sub.contact?.email, 'email'], ['Bank account and IFSC', sub.bank?.account_number && sub.bank?.ifsc, 'bank'],
   ]
@@ -168,7 +183,9 @@ async function readDocs(ctx: Ctx, s: Stage) {
         } catch (e) { notify(`Live AI unavailable for ${d.file_name} (${(e as AIError).message})`) }
       }
       const ref = run.sample_id && settings.useCachedReadings ? sampleFile(run.sample_id, d.file_name) : null
-      const c = ref && sha256(ref) === sha256(bufs[i]!) ? cachedByFile(run.sample_id!, d.file_name) : null
+      let c = ref && sha256(ref) === sha256(bufs[i]!) ? cachedByFile(run.sample_id!, d.file_name) : null
+      // A sample document uploaded through the portal: recognise it by fingerprint.
+      if (!c && settings.useCachedReadings) { const hit = sampleIndex().get(sha256(bufs[i]!)); if (hit) c = cachedByFile(hit.id, hit.file) }
       if (c) { ctx.reads.set(d.id, { ...c, doc_id: d.id }); saved++ }
     }))
     const missing = todo.filter(d => !ctx.reads.has(d.id))
@@ -182,7 +199,7 @@ async function readDocs(ctx: Ctx, s: Stage) {
   for (const d of sub.documents) {
     const r = ctx.reads.get(d.id)!
     const fieldsTxt = Object.entries(r.fields).filter(([, v]) => v).slice(0, 4).map(([k, v]) => `${k.replace(/_/g, ' ')}: ${v}`).join(' · ')
-    const kindOk = r.detected === d.declared || (d.declared === 'cancelled_cheque' && r.detected === 'bank_letter') || (d.declared === 'bank_letter' && r.detected === 'cancelled_cheque')
+    const kindOk = r.detected === d.declared || (d.declared === 'cancelled_cheque' && r.detected === 'bank_letter') || (d.declared === 'bank_letter' && r.detected === 'cancelled_cheque') || (d.declared === 'tax_certificate' && r.detected === 'gst_certificate' && isForeign(sub))
     s.checks.push({ label: `${DOC_LABEL[d.declared]}${r.is_scanned ? ' (scan)' : ''}`, status: !kindOk || !r.legible ? 'fail' : r.confidence < settings.minConfidence ? 'warn' : 'pass', detail: !kindOk ? `This file is a ${DOC_LABEL[r.detected].toLowerCase()}, not a ${DOC_LABEL[d.declared].toLowerCase()}` : `${Math.round(r.confidence * 100)}% confident · ${fieldsTxt}` })
     if (!kindOk) F(ctx, { code: 'DOC-WRONG', severity: 'vendor', stage: 'read', title: `Wrong document uploaded as ${DOC_LABEL[d.declared].toLowerCase()}`, detail: `"${d.file_name}" is a ${DOC_LABEL[r.detected].toLowerCase()}. The ${DOC_LABEL[d.declared].toLowerCase()} is still needed.`, ask: ask.doc(d.declared, `Upload your ${DOC_LABEL[d.declared].toLowerCase()} (the file you sent is a ${DOC_LABEL[r.detected].toLowerCase()})`) })
     else if (!r.legible) F(ctx, { code: 'DOC-ILLEGIBLE', severity: 'vendor', stage: 'read', title: `${DOC_LABEL[d.declared]} can't be read`, detail: 'Key values on the document are not legible.', ask: ask.doc(d.declared, `Upload a clearer copy of your ${DOC_LABEL[d.declared].toLowerCase()}`) })
@@ -214,6 +231,7 @@ async function evidenceCheck(ctx: Ctx, s: Stage) {
 
 // ---------------- 4. format checks ----------------
 function formatChecks(ctx: Ctx, s: Stage) {
+  if (isForeign(ctx.sub)) return foreignFormat(ctx, s)
   const { sub, settings } = ctx
   const g = (sub.gstin || '').toUpperCase().replace(/\s/g, ''), p = (sub.pan || '').toUpperCase(), ifsc = (sub.bank?.ifsc || '').toUpperCase()
   const gOk = GSTIN_RE.test(g) && gstinChecksumOk(g)
@@ -246,6 +264,7 @@ async function sameName(ctx: Ctx, a: string, b: string, context: string): Promis
 }
 
 async function crossCheck(ctx: Ctx, s: Stage) {
+  if (isForeign(ctx.sub)) return foreignCross(ctx, s)
   const { sub } = ctx
   const gst = ctx.byKind.gst_certificate?.fields, pan = ctx.byKind.pan_card?.fields, chq = ctx.byKind.cancelled_cheque?.fields
   const g = sub.gstin.toUpperCase(), p = sub.pan.toUpperCase()
@@ -316,6 +335,7 @@ async function ifscLookup(ifsc: string, live: boolean): Promise<{ found: boolean
 }
 
 async function verify(ctx: Ctx, s: Stage) {
+  if (isForeign(ctx.sub)) return foreignVerify(ctx, s)
   const { sub, settings } = ctx
   const g = sub.gstin.toUpperCase()
   const reg = REGISTRY[g]
@@ -362,15 +382,16 @@ async function verify(ctx: Ctx, s: Stage) {
 // ---------------- 7. fraud & duplicates ----------------
 function fraud(ctx: Ctx, s: Stage) {
   const { sub, settings, vendors } = ctx
-  const acc = sub.bank.account_number.replace(/\D/g, ''), g = sub.gstin.toUpperCase(), p = sub.pan.toUpperCase()
-  const bankOwner = vendors.find(v => v.bank.account_number === acc)
+  const acc = bankKey(sub), g = (isForeign(sub) ? '' : sub.gstin || '').toUpperCase(), p = (isForeign(sub) ? '' : sub.pan || '').toUpperCase()
+  const bankOwner = acc ? vendors.find(v => v.bank.account_number === acc) : undefined
   s.checks.push({ label: 'Bank account used by another vendor', status: bankOwner ? 'fail' : 'pass', detail: bankOwner ? `Already on file for ${bankOwner.name} (${bankOwner.id})` : `Checked against ${vendors.length} vendors` })
   if (bankOwner) F(ctx, { code: 'FRAUD-SHARED-BANK', severity: settings.sharedBankAction, stage: 'fraud', title: `Bank account belongs to ${bankOwner.name}`, detail: `This account is already the payment account of approved vendor ${bankOwner.id} ${bankOwner.name}. A new vendor sharing it is the classic set-up for diverting payments. Do not tell the vendor which vendor matched.` })
-  const gOwner = vendors.find(v => v.gstin === g)
-  s.checks.push({ label: 'Already a vendor', status: gOwner ? 'fail' : 'pass', detail: gOwner ? `${gOwner.id} ${gOwner.name} already has this GSTIN` : 'GSTIN is new to the vendor master' })
+  const taxKey = isForeign(sub) ? TAX_RULES[sub.country].normalise(sub.tax_id || '') : g
+  const gOwner = taxKey ? vendors.find(v => v.gstin === taxKey) : undefined
+  s.checks.push({ label: 'Already a vendor', status: gOwner ? 'fail' : 'pass', detail: gOwner ? `${gOwner.id} ${gOwner.name} already has this tax ID` : 'Tax ID is new to the vendor master' })
   if (gOwner) F(ctx, { code: 'DUP-VENDOR', severity: 'reject', stage: 'fraud', title: `Already onboarded as ${gOwner.id}`, detail: `${gOwner.name} already has GSTIN ${g}. Update the existing vendor instead of creating a duplicate.` })
-  if (g === BUYER.gstin) F(ctx, { code: 'FRAUD-OWN-GSTIN', severity: 'reject', stage: 'fraud', title: "Northwind's own GSTIN", detail: 'The submission uses the buyer\'s own GSTIN.' })
-  const bl = BLOCKLIST.find(b => b.pan === p)
+  if (g && g === BUYER.gstin) F(ctx, { code: 'FRAUD-OWN-GSTIN', severity: 'reject', stage: 'fraud', title: "Northwind's own GSTIN", detail: 'The submission uses the buyer\'s own GSTIN.' })
+  const bl = p ? BLOCKLIST.find(b => b.pan === p) : undefined
   s.checks.push({ label: 'Blocklist', status: bl ? 'fail' : 'pass', detail: bl ? `${bl.name}: ${bl.reason}` : 'Not on the blocklist' })
   if (bl) F(ctx, { code: 'FRAUD-BLOCKED', severity: 'reject', stage: 'fraud', title: 'Entity is on the blocklist', detail: `${bl.name}: ${bl.reason}.` })
   const phone = sub.contact.phone.replace(/\D/g, '').slice(-10), email = sub.contact.email.toLowerCase()
@@ -380,13 +401,81 @@ function fraud(ctx: Ctx, s: Stage) {
   s.summary = bankOwner || gOwner || bl ? 'Fraud or duplicate signal found' : 'No fraud or duplicate signals'
 }
 
+// ---------------- non-Indian vendors ----------------
+const CC_NAME: Record<string, string> = { IN: 'India', US: 'the United States', GB: 'the United Kingdom', AE: 'the UAE', SG: 'Singapore', DE: 'Germany', FR: 'France', NL: 'the Netherlands', HK: 'Hong Kong', CN: 'China' }
+export const isForeign = (sub: Pick<Submission, 'country'>) => Boolean(sub.country && sub.country !== 'India')
+const bankKey = (sub: Submission) => (isForeign(sub) ? (sub.bank.iban || sub.bank.account_number || '').toUpperCase().replace(/\s/g, '') : sub.bank.account_number.replace(/\D/g, ''))
+
+function foreignFormat(ctx: Ctx, s: Stage) {
+  const { sub, settings } = ctx
+  const c = sub.country, rule = TAX_RULES[c], iso = ISO[c]
+  const raw = sub.tax_id || '', id = rule.normalise(raw), ok = rule.ok(id)
+  const other = !ok ? looksLike(raw) : null
+  s.checks.push({ label: `${rule.label} format (${c})`, status: ok ? 'pass' : 'fail', detail: ok ? `${id} is a valid ${rule.label}` : `"${raw}" is not a valid ${c} ${rule.label}: ${rule.why}${other && other.country !== c ? `. It looks like an ${other.label}` : ''}` })
+  if (!ok) F(ctx, { code: 'FMT-TAXID', severity: 'vendor', stage: 'format', title: other && other.country !== c ? `Tax ID is ${withArticle(other.label)}, not a ${c} ${rule.label}` : `Tax ID is not a valid ${c} ${rule.label}`, detail: `The vendor says it is registered in ${c}, where the tax ID is the ${rule.label} (${rule.why}, e.g. ${rule.example}). "${raw}" ${other && other.country !== c ? `is the format of ${withArticle(other.label)}, which suggests the business is really registered in ${other.country}` : 'does not fit that format'}.`, ask: ask.field('tax_id', other && other.country !== c ? `Confirm the country you are registered in. If ${c}, give your ${rule.label} (for example ${rule.example}); if ${other.country}, register with ${other.country} as your country` : `Re-enter your ${rule.label} exactly as on your tax registration certificate (for example ${rule.example})`) })
+  const sw = (sub.bank.swift || '').toUpperCase().replace(/\s/g, '')
+  const swOk = SWIFT_RE.test(sw), swCc = sw.slice(4, 6)
+  s.checks.push({ label: 'SWIFT / BIC', status: swOk && swCc === iso ? 'pass' : 'fail', detail: !swOk ? `"${sw}" is not a SWIFT code` : swCc === iso ? `${sw} · bank in ${c}` : `${sw} is a bank in ${CC_NAME[swCc] || swCc}, not ${c}` })
+  if (!swOk) F(ctx, { code: 'FMT-SWIFT', severity: 'vendor', stage: 'format', title: 'SWIFT code is not valid', detail: 'A SWIFT / BIC code has 8 or 11 characters, e.g. BARCGB22.', ask: ask.field('bank', 'Re-enter your bank SWIFT / BIC code') })
+  else if (swCc !== iso) F(ctx, { code: 'FMT-SWIFT-COUNTRY', severity: 'vendor', stage: 'format', title: `Bank account is in ${CC_NAME[swCc] || swCc}, not ${c}`, detail: `The SWIFT code ${sw} belongs to a bank in ${CC_NAME[swCc] || swCc}, while the vendor says it is registered in ${c}. Paying a foreign-registered vendor into an account in another country needs an explanation.`, ask: ask.field('bank', `Give a bank account in ${c} (with its SWIFT${ibanRequired(c) ? ' and IBAN' : ''}), or explain why the account is abroad`) })
+  if (ibanRequired(c)) {
+    const ib = sub.bank.iban ? ibanCheck(sub.bank.iban) : null
+    s.checks.push({ label: 'IBAN', status: ib?.ok && ib.country === iso ? 'pass' : 'fail', detail: !ib ? `${c} accounts need an IBAN; none given` : !ib.ok ? `${sub.bank.iban}: ${ib.why}` : ib.country !== iso ? `IBAN is for ${ib.country}, not ${iso}` : `${sub.bank.iban} · check digits valid` })
+    if (!ib || !ib.ok || ib.country !== iso) F(ctx, { code: 'FMT-IBAN', severity: 'vendor', stage: 'format', title: !ib ? 'IBAN missing' : 'IBAN is not valid', detail: !ib ? `Payments to ${c} need the account's IBAN.` : `The IBAN ${!ib.ok ? `fails: ${ib.why}` : `is for ${ib.country}, not ${iso}`}.`, ask: ask.field('bank', 'Give your account IBAN exactly as on your bank letter') })
+  }
+  const dom = (sub.contact?.email || '').split('@')[1]?.toLowerCase() || ''
+  const free = FREE_EMAIL.includes(dom)
+  s.checks.push({ label: 'Email domain', status: free ? 'warn' : 'pass', detail: free ? `${dom} is a free webmail address` : dom || 'none' })
+  if (free) { ctx.risk.push({ why: 'Free webmail address', points: 15 }); F(ctx, { code: 'FMT-FREEMAIL', severity: settings.freeEmailAction === 'review' ? 'review' : 'info', stage: 'format', title: 'Contact uses a free webmail address', detail: `${sub.contact.email} is not on a company domain.` }) }
+  s.summary = ctx.findings.some(f => f.stage === 'format' && f.severity !== 'info') ? `Identifiers don't fit ${c}` : `Identifiers are valid for ${c}`
+}
+
+async function foreignCross(ctx: Ctx, s: Stage) {
+  const { sub } = ctx
+  const rule = TAX_RULES[sub.country]
+  const cert = ctx.byKind.tax_certificate?.fields || ctx.byKind.gst_certificate?.fields
+  const bank = (ctx.byKind.bank_letter || ctx.byKind.cancelled_cheque)?.fields
+  if (ctx.byKind.gst_certificate && !ctx.byKind.tax_certificate) {
+    s.checks.push({ label: 'Tax certificate country', status: 'fail', detail: `The certificate uploaded is an Indian GST certificate, not a ${sub.country} tax registration` })
+    F(ctx, { code: 'XCK-CERT-COUNTRY', severity: 'vendor', stage: 'cross', title: `Tax certificate is Indian, not from ${sub.country}`, detail: `The vendor claims ${sub.country} but sent an Indian GST registration certificate.`, ask: ask.doc('tax_certificate', `Upload your ${sub.country} tax registration certificate (${rule.label})`) })
+  }
+  if (cert) {
+    const certId = rule.normalise(cert.tax_id || cert.gstin || '')
+    const formId = rule.normalise(sub.tax_id || '')
+    s.checks.push({ label: 'Tax ID on certificate', status: certId && certId === formId ? 'pass' : 'warn', detail: certId ? (certId === formId ? 'Matches the form' : `Certificate shows ${cert.tax_id || cert.gstin}, form says ${sub.tax_id}`) : 'No tax ID read on the certificate' })
+    const n = await sameName(ctx, sub.legal_name, cert.legal_name || cert.name || '', 'vendor legal name vs tax registration certificate')
+    s.checks.push({ label: 'Name on certificate', status: n.same ? 'pass' : 'fail', detail: `${cert.legal_name || cert.name || 'none'} · ${n.how}` })
+    if (!n.same) F(ctx, { code: 'XCK-NAME-CERT', severity: 'vendor', stage: 'cross', title: 'Name on the tax certificate is a different business', detail: `The certificate is for ${cert.legal_name || cert.name}, not ${sub.legal_name}.`, ask: ask.field('legal_name', 'Correct your legal name to match your tax registration certificate') })
+  }
+  if (bank) {
+    const n = await sameName(ctx, sub.legal_name, bank.account_name || '', 'vendor legal name vs account holder on bank letter')
+    s.checks.push({ label: 'Account holder on bank letter', status: n.same ? 'pass' : 'fail', detail: `${bank.account_name || 'none'} · ${n.how}` })
+    if (!n.same) F(ctx, { code: 'XCK-BANK-NAME', severity: 'vendor', stage: 'cross', title: "Bank letter is not in the vendor's name", detail: `The bank letter names ${bank.account_name}, not ${sub.legal_name}.`, ask: ask.doc('bank_letter', `Upload a bank letter for an account held by ${sub.legal_name}`) })
+  }
+  s.summary = ctx.findings.some(f => f.stage === 'cross' && f.severity !== 'info') ? 'The form and documents disagree' : 'Form and documents agree'
+}
+
+function foreignVerify(ctx: Ctx, s: Stage) {
+  const { sub, settings } = ctx
+  const reg = { 'United Kingdom': 'HMRC VAT check', 'United States': 'IRS TIN matching', 'United Arab Emirates': 'FTA TRN verification', Singapore: 'IRAS GST register', India: 'GST portal' }[sub.country]
+  s.checks.push({ label: `Tax registry (${reg})`, status: 'info', detail: 'Not connected in this demo; format and check digits verified above. In production this is a live lookup.' })
+  const pd = BANK_RECORDS[bankKey(sub)]
+  if (pd) {
+    const same = similarity(normCompany(sub.legal_name), normCompany(pd.holder)) >= settings.nameMatchStrict
+    s.checks.push({ label: 'Account holder (bank confirmation)', status: same ? 'pass' : 'fail', detail: `Bank says: ${pd.holder} (simulated bank)` })
+    if (!same) F(ctx, { code: 'VER-BANK-NAME', severity: 'vendor', stage: 'verify', title: "Bank account is not in the vendor's name", detail: `The bank reports the account holder as ${pd.holder}, not ${sub.legal_name}.`, ask: ask.doc('bank_letter', `Give an account held by ${sub.legal_name}, with a bank letter for it`) })
+  } else s.checks.push({ label: 'Account holder', status: 'info', detail: 'No confirmation service for this bank in the demo; relying on the bank letter' })
+  F(ctx, { code: 'FX-RESIDENCY', severity: settings.foreignNeedsReview ? 'review' : 'info', stage: 'verify', title: `Foreign vendor (${sub.country})`, detail: 'Before the first payment, collect a Tax Residency Certificate and Form 10F so the right withholding tax applies on cross-border payments.' })
+  s.summary = ctx.findings.some(f => f.stage === 'verify' && f.severity !== 'info') ? 'External checks raised issues' : `${sub.country} vendor: identifiers verified`
+}
+
 // ---------------- 8. decide ----------------
 const PRIORITY = ['FRAUD-SHARED-BANK', 'FRAUD-BLOCKED', 'FRAUD-OWN-GSTIN', 'DUP-VENDOR', 'VER-GST-INACTIVE', 'XCK-PAN-GSTIN', 'VER-GST-NAME', 'XCK-NAME-GST', 'VER-BANK-NAME', 'DOC-WRONG', 'XCK-BIZTYPE']
 const SEV_RANK: Record<string, number> = { reject: 0, vendor: 1, review: 2, info: 3 }
 function ruleValue(ctx: Ctx, f: CustomRule['conditions'][number]['field'], risk: number): string | number {
   const s = ctx.sub
   switch (f) {
-    case 'legal_name': return s.legal_name; case 'business_type': return s.business_type; case 'state': return s.address.state; case 'category': return s.category
+    case 'legal_name': return s.legal_name; case 'country': return s.country || 'India'; case 'business_type': return s.business_type; case 'state': return s.address.state; case 'category': return s.category
     case 'msme': return s.msme ? 'yes' : 'no'; case 'email_domain': return s.contact.email.split('@')[1] || ''; case 'sponsor_department': return s.sponsor?.department || 'none'
     case 'risk': return risk; case 'registration_age_days': return ctx.registryAge ?? 9999
   }
@@ -475,8 +564,9 @@ export async function approveVendor(st: Store, run: Run, by: string): Promise<Ve
   const same = existing.find(v => v.onboarded?.case_id === run.case_id)
   if (same) return same
   const id = `V-${301 + existing.length}`
-  const v: Vendor = { id, name: sub.legal_name, trade_name: sub.trade_name, gstin: sub.gstin.toUpperCase(), pan: sub.pan.toUpperCase(), business_type: sub.business_type, state: sub.gstin.slice(0, 2), address: `${sub.address.line}, ${sub.address.city} ${sub.address.pin}`, status: 'active',
-    bank: { bank_name: sub.bank.bank_name || '-', account_number: sub.bank.account_number.replace(/\D/g, ''), ifsc: sub.bank.ifsc.toUpperCase(), account_name: sub.bank.account_name }, contact: { name: sub.contact.name, phone: sub.contact.phone, email: sub.contact.email },
+  const fx = isForeign(sub)
+  const v: Vendor = { id, name: sub.legal_name, trade_name: sub.trade_name, gstin: fx ? TAX_RULES[sub.country].normalise(sub.tax_id || '') : sub.gstin.toUpperCase(), pan: fx ? '' : sub.pan.toUpperCase(), business_type: sub.business_type, state: fx ? ISO[sub.country] : sub.gstin.slice(0, 2), address: `${sub.address.line}, ${sub.address.city} ${sub.address.pin}${fx ? ', ' + sub.country : ''}`, status: 'active',
+    bank: { bank_name: sub.bank.bank_name || '-', account_number: bankKey(sub), ifsc: fx ? (sub.bank.swift || '').toUpperCase() : sub.bank.ifsc.toUpperCase(), account_name: sub.bank.account_name }, contact: { name: sub.contact.name, phone: sub.contact.phone, email: sub.contact.email },
     onboarded: { by, at: new Date().toISOString(), run_id: run.id, case_id: run.case_id, rounds: run.round } }
   await st.addVendor(v)
   return v
