@@ -490,3 +490,9 @@ textarea.input { padding: 10px 12px; height: auto; min-height: 84px; resize: ver
   .gd-card { width: auto; }
 }
 @media print { .gd-fab, .gd-panel, .gd-tour { display: none !important; } }
+
+/* Always-visible Reset demo, top right */
+.topstrip { max-width: 1240px; margin: 0 auto; padding: 14px 32px 0; display: flex; justify-content: flex-end; }
+.topstrip + .page { padding-top: 4px; }
+.reset-demo { white-space: nowrap; }
+@media (max-width: 820px) { .topstrip { display: none; } }

@@ -1,5 +1,6 @@
 'use client'
 import { Guide } from './Guide'
+import { ResetDemo } from './ResetDemo'
 import { GUIDE } from '@/lib/guideContent'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -59,8 +60,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
           <header className="mtop">
             <Link href="/" className="row" style={{ gap: 8 }}><Logo size={26} /><b style={{ letterSpacing: '.14em', fontSize: 14 }}>VETTED</b></Link>
             <span className="right" />
+            <ResetDemo compact />
             {status && <span className={`pill ${status.ai === 'live' ? 'violet' : ''}`}><span className="dot" />{status.ai === 'live' ? 'AI live' : 'Cached AI'}</span>}
           </header>
+          <div className="topstrip"><ResetDemo /></div>
           {children}
         </div>
         <Guide cfg={GUIDE} />

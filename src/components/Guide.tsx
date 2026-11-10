@@ -22,7 +22,6 @@ export type GuideConfig = {
 }
 
 type Msg = { from: 'bot' | 'you'; text: string; chips?: string[] }
-const SEEN = (k: string) => { try { return localStorage.getItem(k) } catch { return '1' } }
 const MARK = (k: string, v: string) => { try { localStorage.setItem(k, v) } catch { /* private mode */ } }
 
 export function Guide({ cfg }: { cfg: GuideConfig }) {
@@ -34,7 +33,8 @@ export function Guide({ cfg }: { cfg: GuideConfig }) {
   const page = cfg.pages.find(p => (p.prefix === '/' ? path === '/' : path.startsWith(p.prefix))) || cfg.pages[0]
 
   useEffect(() => {
-    if (!SEEN(cfg.storageKey)) { const t = setTimeout(() => setMode(m => (m === 'closed' ? 'welcome' : m)), 1200); return () => clearTimeout(t) }
+    // Ask on every visit (each fresh load of the site); in-app navigation keeps the choice.
+    const t = setTimeout(() => setMode(m => (m === 'closed' ? 'welcome' : m)), 1200); return () => clearTimeout(t)
   }, [cfg.storageKey])
 
   const startTour = () => { MARK(cfg.storageKey, 'tour'); setStep(0); setMode('tour') }
